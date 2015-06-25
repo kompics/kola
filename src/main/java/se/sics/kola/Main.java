@@ -60,7 +60,7 @@ public class Main {
             // check program semantics
             //ast.apply(new SemanticAnalyser());
             // generate class file
-            //ast.apply(new ClassGenerator());
+            ast.apply(new JavaSourceGenerator());
         } catch (ParserException | LexerException | IOException e) {
             System.out.println(e);
         }
