@@ -5,6 +5,7 @@ package se.sics.kola.lexer;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PushbackReader;
 import se.sics.kola.node.EOF;
 import se.sics.kola.node.InvalidToken;
@@ -3088,9 +3089,10 @@ public class Lexer
     {
         try
         {
-            DataInputStream s = new DataInputStream(
-                new BufferedInputStream(
-                Lexer.class.getResourceAsStream("lexer.dat")));
+            InputStream str = Lexer.class.getResourceAsStream("lexer.dat");
+            System.out.println("lexer.dat bytes: "+str.available());
+            BufferedInputStream bis = new BufferedInputStream(str);
+            DataInputStream s = new DataInputStream(bis);
 
             // read gotoTable
             int length = s.readInt();
@@ -3127,10 +3129,9 @@ public class Lexer
             }
 
             s.close();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException("The file \"lexer.dat\" is either missing or corrupted.", e);
+        } catch(Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("The file \"lexer.dat\" is either missing or corrupted.");
         }
     }
 }
