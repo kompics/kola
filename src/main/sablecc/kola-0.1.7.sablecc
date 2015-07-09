@@ -366,7 +366,7 @@ Ignored Tokens
 Productions
 
   java_compilation_unit =
-    compilation_unit;
+    compilation_unit {-> New java_compilation_unit(compilation_unit.compilation_unit)};
 
   // 3.10
 
@@ -429,7 +429,7 @@ Productions
   //  {interface} interface_type;
 
   class_or_interface_type_no_arguments =
-    name;
+    name {-> New class_or_interface_type_no_arguments(name.name)};
 
   class_or_interface_type =
     type_decl_specifier type_arguments?;
@@ -487,7 +487,7 @@ Productions
 
   additional_bound_list =
     {list} additional_bound additional_bound_list |
-    {bound} additional_bound;
+    {bound} additional_bound ;
 
   additional_bound =
     amp interface_type;
@@ -555,11 +555,11 @@ Productions
   //  {identifier} identifier |
   //  {ambiguous} ambiguous_name dot identifier;
 
-  name =
-    identifier name_tail*;
+  name {-> name}=
+    identifier name_tail* {-> New name([identifier.identifier, name_tail.identifier])};
 
-  name_tail =
-    dot identifier;
+  name_tail {-> identifier}=
+    dot identifier {-> identifier.identifier};
 
 
   // 7.3
@@ -567,9 +567,9 @@ Productions
   compilation_unit =
     package_declaration? import_declarations? type_declarations?;
 
-  import_declarations =
-    {declaration} import_declaration |
-    {declarations} import_declarations import_declaration;
+  import_declarations {->import_declaration*} =
+    {declaration} import_declaration {-> [import_declaration.import_declaration]}|
+    {declarations} import_declarations import_declaration {-> [import_declaration.import_declaration, import_declaration.import_declaration]};
 
   type_declarations =
     {declaration} type_declaration |
@@ -583,27 +583,27 @@ Productions
   // modifiers? instead of annotations?
 
   package_declaration =
-    modifiers? package_keyword name semi;
+    modifiers? package_keyword name semi {-> New package_declaration([modifiers.modifier, name])};
 
   // 7.5
 
-  import_declaration =
-    {single} single_type_import_declaration |
-    {type} type_import_on_demand_declaration |
-    {static} single_static_import_declaration |
-    {demand} static_import_on_demand_declaration;
+  import_declaration {-> import_declaration} =
+    {single} single_type_import_declaration {-> single_type_import_declaration.import_declaration}|
+    {type} type_import_on_demand_declaration {-> type_import_on_demand_declaration.import_declaration}|
+    {static} single_static_import_declaration {-> single_static_import_declaration.import_declaration}|
+    {demand} static_import_on_demand_declaration {-> static_import_on_demand_declaration.import_declaration};
 
-  single_type_import_declaration =
-    import_keyword name semi;
+  single_type_import_declaration {-> import_declaration} =
+    import_keyword name semi {-> New import_declaration.single(name)};
 
-  type_import_on_demand_declaration =
-    import_keyword name dot star semi;
+  type_import_on_demand_declaration {-> import_declaration} =
+    import_keyword name dot star semi {-> New import_declaration.type(name)};
 
-  single_static_import_declaration =
-    import_keyword static_keyword name dot identifier semi;
+  single_static_import_declaration {-> import_declaration} =
+    import_keyword static_keyword name dot identifier semi {-> New import_declaration.static(name)};
 
-  static_import_on_demand_declaration =
-    import_keyword static_keyword name dot star semi;
+  static_import_on_demand_declaration {-> import_declaration} =
+    import_keyword static_keyword name dot star semi {-> New import_declaration.demand(name)};
 
   // 7.6
 
@@ -1033,9 +1033,9 @@ Productions
 
   // 9.7
 
-  annotations =
-    {annotation} annotation |
-    {annotations} annotations annotation;
+  annotations {-> annotation*}=
+    {annotation} annotation {-> [annotation.annotation]}|
+    {annotations} annotations annotation {-> [annotations.annotation, annotation.annotation]};
 
   annotation =
     {normal_annotation} normal_annotation |
@@ -1045,12 +1045,12 @@ Productions
   normal_annotation =
     at name l_par element_value_pairs? r_par;
 
-  element_value_pairs =
-    {pair} element_value_pair |
-    {pairs} element_value_pairs comma element_value_pair;
+  element_value_pairs {-> element_value_pair*}=
+    {pair} element_value_pair {-> [element_value_pair.element_value_pair]}|
+    {pairs} element_value_pairs comma element_value_pair {-> [element_value_pairs.element_value_pair, element_value_pair.element_value_pair]};
 
-  element_value_pair =
-    identifier assign element_value;
+  element_value_pair {-> element_value_pair}=
+    identifier assign element_value {-> New element_value_pair(identifier, element_value)};
 
   //element_value =
   //  {conditional} conditional_expression |
@@ -1173,8 +1173,7 @@ Productions
 
   // 14.6
 
-  empty_statement =
-    semi;
+  empty_statement {-> } = semi {-> };
 
   // 14.7
 
@@ -1996,4 +1995,709 @@ Productions
   trigger_statement =
     {name} trigger_keyword name r_arrow identifier semi |
     {expression} trigger_keyword expression_no_name r_arrow identifier semi;
+
+
+//////////////////////////////////////////
+//////////////// AST ////////////////////
+/////////////////////////////////////////
+
+
+Abstract Syntax Tree
+
+java_compilation_unit = compilation_unit;
+
+compilation_unit = package_declaration? import_declaration* type_declaration*;
+
+package_declaration = modifier* name;
+
+import_declaration = 
+    {single} name |
+    {type} name |
+    {static} name |
+    {demand} name;
+
+type_declaration =
+    {class} class_declaration |
+    {interface} interface_declaration |
+    {semi} semi;
+
+modifier =
+    {annotation} annotation |
+    {public} public_keyword |
+    {protected} protected_keyword |
+    {private} private_keyword |
+    {abstract} abstract_keyword |
+    {static} static_keyword |
+    {final} final_keyword |
+    {strictfp} strictfp_keyword |
+    {transient} transient_keyword |
+    {volatile} volatile_keyword |
+    {synchronized} synchronized_keyword |
+    {native} native_keyword;
+
+name = identifier*;
+
+class_declaration = 
+  {class} normal_class_declaration |
+  {enum} enum_declaration;
+
+interface_declaration =
+    {interface} normal_interface_declaration |
+    {annotation} annotation_type_declaration;
+
+annotation =
+    {normal_annotation} normal_annotation |
+    {marker_annotation} marker_annotation |
+    {single} single_element_annotation;
+
+normal_annotation = name element_value_pair*;
+
+element_value_pair = identifier element_value;
+
+element_value =
+    {conditional} conditional_expression_no_name |
+    {name} name |
+    {annotation} annotation |
+    {array} element_value_array_initializer;
+
+element_value_array_initializer = element_value*;
+
+marker_annotation = identifier;
+
+single_element_annotation = identifier element_value;
+
+normal_class_declaration = modifier* identifier type_parameter* interface_type* class_body;
+
+enum_declaration = modifier* identifier interface_type* enum_body;
+
+normal_interface_declaration = modifier* identifier type_parameter* [extends_interfaces]:interface_type* interface_body;
+
+annotation_type_declaration = modifier* identifier annotation_type_body;
+
+type_parameter = identifier type_bound*;
+
+literal =
+    {integer} integer_literal |
+    {floating_point} floating_point_literal |
+    {boolean} boolean_literal |
+    {character} character_literal |
+    {string} string_literal |
+    {null} null_literal;
+
+class_type = type_decl_specifier type_argument*;
+
+interface_type = type_decl_specifier type_argument*;
+
+type_decl_specifier = name_with_args+;
+
+name_with_args = name type_arguments?;
+
+class_name = name;
+
+type_arguments = 
+    {gt} type_argument+ |
+    {shr} [ta1s]:type_argument* type_decl_specifier [ta2s]:type_argument+ |
+    {ushr} [ta1s]:type_argument* [specifier1]:type_decl_specifier [ta2s]:type_argument* [specifier2]:type_decl_specifier [ta3s]:type_argument+;
+
+type_argument = 
+    {reference} reference_type |
+    {wildcard} wildcard;
+
+wildcard = wildcard_bounds?;
+
+wildcard_bounds =
+    {extends} reference_type |
+    {super} reference_type;
+
+primitive_type =
+    {numeric} numeric_type |
+    {boolean} boolean_keyword;
+
+  numeric_type =
+    {integral} integral_type |
+    {floating} floating_point_type;
+
+  integral_type =
+    {byte} byte_keyword |
+    {short} short_keyword |
+    {int} int_keyword |
+    {long} long_keyword |
+    {char} char_keyword;
+
+  floating_point_type =
+    {float} float_keyword |
+    {double} double_keyword;
+
+reference_type =
+    {class} class_or_interface_type |
+    {array} array_type;
+
+class_or_interface_type_no_arguments = name;
+
+class_or_interface_type =
+    type_decl_specifier type_arguments?;
+
+array_type =
+    {class} class_or_interface_type |
+    {primitive} primitive_type;
+
+array_type_no_arguments =
+    {class} class_or_interface_type_no_arguments dim+ |
+    {primitive} primitive_type dim+;
+
+type =
+    {primitive} primitive_type |
+    {reference} reference_type;
+
+type_no_arguments =
+    {primitive} primitive_type |
+    {reference} reference_type_no_arguments;
+
+reference_type_no_arguments =
+    {class} class_or_interface_type_no_arguments |
+    {array} array_type_no_arguments;
+
+class_body = class_body_declaration*;
+
+class_body_declaration =
+    {member} class_member_declaration |
+    {instance} instance_initializer |
+    {static} static_initializer |
+    {constructor} constructor_declaration;
+
+enum_body = enum_constant* class_body_declaration*;
+
+enum_constant = modifier* identifier argument* class_body?;
+
+interface_body = interface_member_declaration*;
+
+interface_member_declaration =
+    {constant} constant_declaration |
+    {method} abstract_method_declaration |
+    {class} class_declaration |
+    {interface} interface_declaration |
+    {semi} semi;
+
+class_member_declaration =
+    {field} field_declaration |
+    {method} method_declaration |
+    {class} class_declaration |
+    {interface} interface_declaration |
+    {semi} semi;
+
+constant_declaration = modifier* type variable_declarator+;
+
+variable_declarator =
+    {id} variable_declarator_id |
+    {initializer} variable_declarator_id variable_initializer_no_name |
+    {initializer_name} variable_declarator_id name;
+
+variable_declarator_id = identifier;
+
+variable_initializer_no_name =
+    {expression} expression_no_name |
+    {initializer} array_initializer;
+
+abstract_method_declaration =
+    modifier* type_parameter* result method_declarator throws?;
+
+field_declaration = modifier* type variable_declarator+;
+
+method_declaration = method_header method_body;
+
+method_header = modifier* type_parameter* result method_declarator throws?;
+
+method_declarator = identifier formal_parameter_list?;
+
+annotation_type_body = annotation_type_element_declaration*;
+
+annotation_type_element_declaration =
+    {abstract} modifier* type identifier [default_value]:element_value |
+    {constant} constant_declaration |
+    {class} class_declaration |
+    {interface} interface_declaration |
+    {semi} semi;
+
+type_bound = interface_type*;
+
+instance_initializer = block;
+
+static_initializer = block;
+
+array_initializer =
+    {variable} variable_initializer_no_name* |
+    {name} name;
+
+constructor_declaration = modifier* constructor_declarator throws? constructor_body;
+
+constructor_declarator =
+    type_parameter* simple_type_name formal_parameter_list?;
+
+simple_type_name = identifier;
+
+formal_parameter_list =
+    {parameter} last_formal_parameter |
+    {parameters} formal_parameter* comma last_formal_parameter;
+
+last_formal_parameter =
+    {variable} formal_parameter |
+    {formal} formal_parameter;
+
+formal_parameter = modifier* type variable_declarator_id;
+
+argument =
+    {expression} expression_no_name |
+    {name} name;
+
+result =
+    {type} type |
+    {void} void_keyword;
+
+throws = exception_type+;
+
+exception_type =
+    name;
+
+method_body =
+    {block} block |
+    {semi} semi;
+
+block = block_statement*;
+
+block_statement =
+    {variable} local_variable_declaration |
+    {class} class_declaration |
+    {statement} statement;
+
+statement =
+    {without_trailing_substatement} statement_without_trailing_substatement |
+    {labeled_statement} labeled_statement |
+    {if} if_then_statement |
+    {if_else} if_then_else_statement |
+    {while_statement} while_statement |
+    {for_statement} for_statement;
+
+statement_without_trailing_substatement =
+    {block} block |
+    {expression_statement} expression_statement |
+    {assert_statement} assert_statement |
+    {switch_statement} switch_statement |
+    {do_statement} do_statement |
+    {break_statement} break_statement |
+    {continue_statement} continue_statement |
+    {return_statement} return_statement |
+    {synchronized_statement} synchronized_statement |
+    {throw_statement} throw_statement |
+    {try_statement} try_statement |
+    {connect} connect_statement |
+    {disconnect} disconnect_statement |
+    {subscribe} subscribe_statement |
+    {unsubscribe} unsubscribe_statement |
+    {trigger} trigger_statement;
+
+statement_no_short_if =
+    {without_trailing_substatement} statement_without_trailing_substatement |
+    {labeled_statement} labeled_statement_no_short_if |
+    {if} if_then_else_statement_no_short_if |
+    {while_statement} while_statement_no_short_if |
+    {for_statement} for_statement_no_short_if;
+
+labeled_statement = identifier statement;
+
+labeled_statement_no_short_if = identifier statement_no_short_if;
+
+local_variable_declaration =
+    modifier* type variable_declarator+;
+
+expression_statement = statement_expression;
+
+statement_expression =
+    {assignment} assignment |
+    {pre_increment} pre_increment_expression |
+    {pre_decrement} pre_decrement_expression |
+    {post_increment} post_increment_expression |
+    {post_decrement} post_decrement_expression |
+    {method} method_invocation |
+    {class} class_instance_creation_expression;
+
+if_then_statement =
+    {expression} [cond]:expression_no_name [then]:statement |
+    {name} [cond]:name [then]:statement;
+
+if_then_else_statement =
+    {expression} [cond]:expression_no_name [then]:statement_no_short_if [else]:statement |
+    {name} [cond]:name [then]:statement_no_short_if [else]:statement;
+
+if_then_else_statement_no_short_if =
+    {expression} [cond]:expression_no_name [then]:statement_no_short_if [else]:statement_no_short_if |
+    {name} [cond]:name [then]:statement_no_short_if [else]:statement_no_short_if;
+
+
+while_statement =
+    {expression} [cond]:expression_no_name [do]:statement |
+    {name} [cond]:name [do]:statement;
+
+while_statement_no_short_if =
+    {expression} [cond]:expression_no_name [do]:statement_no_short_if |
+    {name} [cond]:name [do]:statement_no_short_if;
+
+for_statement =
+    {basic_for} basic_for_statement |
+    {enhanced_for} enhanced_for_statement;
+
+basic_for_statement =
+    {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement |
+    {name} [init]:for_init? [cond]:name [update]:for_update? [do]:statement;
+
+for_statement_no_short_if =
+    {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement_no_short_if |
+    {name} [init]:for_init? [cond]:name [update]:for_update? [do]:statement_no_short_if;
+
+for_init =
+    {statement} statement_expression+ |
+    {local} local_variable_declaration;
+
+for_update = statement_expression+;
+
+enhanced_for_statement =
+    {expression} [variable]:formal_parameter [iterable]:expression_no_name [do]:statement |
+    {name} [variable]:formal_parameter [iterable]:name [do]:statement;
+
+assert_statement =
+    {assert} expression_no_name |
+    {assert_name} name |
+    {expression} [expression1]:expression_no_name [expression2]:expression_no_name |
+    {expression_name2} [expression1]:expression_no_name [expression2]:name |
+    {expression_name1} [expression1]:name [expression2]:expression_no_name |
+    {expression_name1_name2} [expression1]:name [expression2]:name;
+
+switch_statement =
+    {expression} [target]:expression_no_name switch_block |
+    {name} [target]:name switch_block;
+
+switch_block = switch_block_statement_group* switch_label*;
+
+switch_block_statement_group =
+    switch_label+ block_statement+;
+
+switch_label =
+    {constant} [case]:constant_expression_no_name |
+    {constant_name} [case]:name |
+    {default} default_keyword;
+
+do_statement =
+    {expression} [do]:statement [cond]:expression_no_name |
+    {name} [do]:statement [cond]:name;
+
+break_statement = identifier?;
+
+continue_statement = identifier?;
+
+return_statement =
+    {expression} [return_value]:expression_no_name? |
+    {name} [return_value]:name;
+
+synchronized_statement =
+    {expression} [lock]:expression_no_name block |
+    {name} [lock]:name block;
+
+throw_statement =
+    {expression} [throwable]:expression_no_name |
+    {name} [throwable]:name;
+
+try_statement =
+    {catch} block catch_clause+ |
+    {finally} block catch_clause* finally |
+    {resources} try_with_resources_statement;
+
+catch_clause = catch_formal_parameter block;
+
+catch_formal_parameter = modifier* [catch_types]:class_type+ variable_declarator_id;
+
+finally = block;
+
+try_with_resources_statement =
+    resource_specification block variable_declarator_id catch_clause* finally?;
+
+resource_specification = resource+;
+
+resource =
+    {expression} modifier* type variable_declarator_id expression_no_name |
+    {name} modifier* type variable_declarator_id name;
+
+connect_statement = [provided_id]:identifier [required_id]:identifier class_type;
+
+subscribe_statement = [handler_id]:identifier [port_id]:identifier;
+
+disconnect_statement = [provided_id]:identifier [required_id]:identifier class_type;
+
+unsubscribe_statement = [handler_id]:identifier [port_id]:identifier;
+
+trigger_statement =
+    {name} [event]:name [port_id]:identifier |
+    {expression} [event]:expression_no_name [port_id]:identifier;
+
+assignment =
+    {assignment} left_hand_side assignment_operator [value]:assignment_expression_no_name |
+    {name} left_hand_side assignment_operator [value]:name;
+
+left_hand_side =
+    {expression} name |
+    {field} field_access |
+    {array} array_access;
+
+assignment_operator =
+    {assign} assign |
+    {star_assign} star_assign |
+    {slash_assign} slash_assign |
+    {percent_assign} percent_assign |
+    {plus_assign} plus_assign |
+    {minus_assign} minus_assign |
+    {shl_assign} shl_assign |
+    {shr_assign} shr_assign |
+    {ushr_assign} ushr_assign |
+    {amp_assign} amp_assign |
+    {caret_assign} caret_assign |
+    {bar_assign} bar_assign;
+
+constructor_body = explicit_constructor_invocation? block_statement*;
+
+explicit_constructor_invocation =
+    {this} [non_wild_type_arguments]:reference_type* argument* |
+    {super} [non_wild_type_arguments]:reference_type* argument* |
+    {primary} primary [non_wild_type_arguments]:reference_type* argument*;
+
+primary =
+    {primary} primary_no_new_array |
+    {array} array_creation_expression;
+
+primary_no_new_array =
+    {literal} literal |
+    {type} type_no_arguments |
+    {void} |
+    {this} |
+    {class} class_name |
+    {expression} expression_no_name |
+    {expression_name} name |
+    {instance} class_instance_creation_expression |
+    {field} field_access |
+    {method} method_invocation |
+    {array} array_access;
+
+
+expression_no_name = assignment_expression_no_name;
+
+constant_expression_no_name = expression_no_name;
+
+assignment_expression_no_name =
+    {expression} conditional_expression_no_name |
+    {assignment} assignment;
+
+unary_expression_no_name =
+   {increment} pre_increment_expression |
+   {decrement} pre_decrement_expression |
+   {plus} unary_expression_no_name |
+   {plus_name} name |
+   {minus} unary_expression_no_name |
+   {minus_name} name |
+   {unary} unary_expression_not_plus_minus_no_name;
+
+pre_increment_expression =
+    {unary} unary_expression_no_name |
+    {name} name;
+
+pre_decrement_expression =
+    {unary} unary_expression_no_name |
+    {name} name;
+
+postfix_expression_no_name =
+    {primary} primary |
+    {increment} post_increment_expression |
+    {decrement} post_decrement_expression;
+
+post_increment_expression =
+    {postfix} postfix_expression_no_name |
+    {name} name;
+
+post_decrement_expression =
+    {postfix} postfix_expression_no_name |
+    {name} name;
+
+unary_expression_not_plus_minus_no_name =
+    {postfix} postfix_expression_no_name |
+    {tilde} unary_expression_no_name |
+    {tilde_name} name |
+    {emark} unary_expression_no_name |
+    {emark_name} name |
+    {cast} cast_expression;
+
+cast_expression =
+    {primitive} [target]:primitive_type [expression]:unary_expression_no_name |
+    {primitive_name} [target]:primitive_type [expression]:name |
+    {reference} [target]:reference_type [expression]:unary_expression_not_plus_minus_no_name |
+    {reference_name} [target]:reference_type [expression]:name;
+
+conditional_expression_no_name =
+    {or} conditional_or_expression_no_name |
+    {qmark_colon} [cond]:conditional_or_expression_no_name [true]:expression_no_name [false]:conditional_expression_no_name |
+    {qmark_name_colon} [cond]:conditional_or_expression_no_name [true]:name [false]:conditional_expression_no_name |
+    {qmark_colon_name} [cond]:conditional_or_expression_no_name [true]:expression_no_name [false]:name |
+    {qmark_name_colon_name} [cond]:conditional_or_expression_no_name [true]:name [false]:name |
+    {name_qmark_colon} [cond]:name [true]:expression_no_name [false]:conditional_expression_no_name |
+    {name_qmark_name_colon} [cond]:name [true]:name [false]:conditional_expression_no_name |
+    {name_qmark_colon_name} [cond]:name [true]:expression_no_name [false]:name |
+    {name_qmark_name_colon_name} [cond]:name [true]:name [false]:name;
+
+conditional_or_expression_no_name =
+    {and} conditional_and_expression_no_name |
+    {bar} [left]:conditional_or_expression_no_name [right]:conditional_and_expression_no_name |
+    {bar_name} [left]:conditional_or_expression_no_name [right]:name |
+    {name_bar} [left]:name [right]:conditional_and_expression_no_name |
+    {name_bar_name} [left]:name [right]:name;
+
+conditional_and_expression_no_name =
+    {or} inclusive_or_expression_no_name |
+    {amp} [left]:conditional_and_expression_no_name [right]:inclusive_or_expression_no_name |
+    {amp_name} [left]:conditional_and_expression_no_name [right]:name |
+    {name_amp} [left]:name [right]:inclusive_or_expression_no_name |
+    {name_amp_name} [left]:name [right]:name;
+
+inclusive_or_expression_no_name =
+    {or} exclusive_or_expression_no_name |
+    {bar} [left]:inclusive_or_expression_no_name [right]:exclusive_or_expression_no_name |
+    {bar_name} [left]:inclusive_or_expression_no_name [right]:name |
+    {name_bar} [left]:name [right]:exclusive_or_expression_no_name |
+    {name_bar_name} [left]:name [right]:name;
+
+exclusive_or_expression_no_name =
+    {and} and_expression_no_name |
+    {caret} [left]:exclusive_or_expression_no_name [right]:and_expression_no_name |
+    {caret_name} [left]:exclusive_or_expression_no_name [right]:name |
+    {name_caret} [left]:name [right]:and_expression_no_name |
+    {name_caret_name} [left]:name [right]:name;
+
+and_expression_no_name =
+    {equality} equality_expression_no_name |
+    {amp} [left]:and_expression_no_name [right]:equality_expression_no_name |
+    {amp_name} [left]:and_expression_no_name [right]:name |
+    {name_amp} [left]:name [right]:equality_expression_no_name |
+    {name_amp_name} [left]:name [right]:name;
+
+equality_expression_no_name =
+    {relational} relational_expression_no_name |
+    {eq} [left]:equality_expression_no_name [right]:relational_expression_no_name |
+    {eq_name} [left]:equality_expression_no_name [right]:name |
+    {name_eq} [left]:name [right]:relational_expression_no_name |
+    {name_eq_name} [left]:name [right]:name |
+    {neq} [left]:equality_expression_no_name [right]:relational_expression_no_name |
+    {neq_name} [left]:equality_expression_no_name [right]:name |
+    {name_neq} [left]:name [right]:relational_expression_no_name |
+    {name_neq_name} [left]:name [right]:name;
+
+relational_expression_no_name =
+    {no_instanceof} relational_expression_no_name_no_instanceof |
+    {instanceof} [left]:relational_expression_no_name [right]:reference_type |
+    {name_instanceof} [left]:name [right]:reference_type;
+
+relational_expression_no_name_no_instanceof =
+    {shift} shift_expression_no_name |
+    {lt} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
+    {lt_name} [left]:shift_expression_no_name [right]:name |
+    {name_lt} [left]:name [right]:relational_expression_no_name_no_instanceof |
+    {name_lt_name} [left]:name [right]:name |
+    {gt} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
+    {gt_name} [left]:shift_expression_no_name [right]:name |
+    {name_gt} [left]:name [right]:relational_expression_no_name_no_instanceof |
+    {name_gt_name} [left]:name [right]:name |
+    {lteq} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
+    {lteq_name} [left]:shift_expression_no_name [right]:name |
+    {name_lteq} [left]:name [right]:relational_expression_no_name_no_instanceof |
+    {name_lteq_name} [left]:name [right]:name |
+    {gteq} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
+    {gteq_name} [left]:shift_expression_no_name [right]:name |
+    {name_gteq} [left]:name [right]:relational_expression_no_name_no_instanceof |
+    {name_gteq_name} [left]:name [right]:name;
+
+shift_expression_no_name =
+    {additive} additive_expression_no_name |
+    {shl} [left]:shift_expression_no_name [right]:additive_expression_no_name |
+    {shl_name} [left]:shift_expression_no_name [right]:name |
+    {name_shl} [left]:name [right]:additive_expression_no_name |
+    {name_shl_name} [left]:name [right]:name |
+    {shr} [left]:shift_expression_no_name [right]:additive_expression_no_name |
+    {shr_name} [left]:shift_expression_no_name [right]:name |
+    {name_shr} [left]:name [right]:additive_expression_no_name |
+    {name_shr_name} [left]:name [right]:name |
+    {ushr} [left]:shift_expression_no_name [right]:additive_expression_no_name |
+    {ushr_name} [left]:shift_expression_no_name [right]:name |
+    {name_ushr} [left]:name [right]:additive_expression_no_name |
+    {name_ushr_name} [left]:name [right]:name;
+
+ additive_expression_no_name =
+    {multiplicative} multiplicative_expression_no_name |
+    {plus} [left]:additive_expression_no_name [right]:multiplicative_expression_no_name |
+    {plus_name} [left]:additive_expression_no_name [right]:name |
+    {name_plus} [left]:name [right]:multiplicative_expression_no_name |
+    {name_plus_name} [left]:name [right]:name |
+    {minus} [left]:additive_expression_no_name [right]:multiplicative_expression_no_name |
+    {minus_name} [left]:additive_expression_no_name [right]:name |
+    {name_minus} [left]:name [right]:multiplicative_expression_no_name |
+    {name_minus_name} [left]:name [right]:name;
+
+multiplicative_expression_no_name =
+    {unary} unary_expression_no_name |
+    {star} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
+    {star_name} [left]:multiplicative_expression_no_name [right]:name |
+    {name_star} [left]:name [right]:unary_expression_no_name |
+    {name_star_name} [left]:name [right]:name |
+    {slash} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
+    {slash_name} [left]:multiplicative_expression_no_name [right]:name |
+    {name_slash} [left]:name [right]:unary_expression_no_name |
+    {name_slash_name} [left]:name slash [right]:name |
+    {percent} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
+    {percent_name} [left]:multiplicative_expression_no_name [right]:name |
+    {name_percent} [left]:name [right]:unary_expression_no_name |
+    {name_percent_name} [left]:name [right]:name;
+
+
+method_invocation =
+    {method} name argument* |
+    {primary} primary [non_wild_type_arguments]:reference_type* identifier argument* |
+    {super} [non_wild_type_arguments]:reference_type* identifier argument* |
+    {class} class_name [non_wild_type_arguments]:reference_type* identifier argument* |
+    {type} name [non_wild_type_arguments]:reference_type* identifier argument*;
+
+class_instance_creation_expression =
+    {new} type_arguments? type_decl_specifier type_arguments_or_diamond? argument* class_body? |
+    {primary} primary type_arguments? identifier type_arguments_or_diamond? argument* class_body?;
+
+type_arguments_or_diamond =
+    {type_arguments} type_arguments |
+    {diamond} ;
+
+field_access =
+    {primary} primary identifier |
+    {super} identifier |
+    {class} class_name identifier;
+
+array_access =
+    {expression} [array]:name [field]:expression_no_name |
+    {expression_name} [array]:name [field]:name |
+    {primary} [array]:primary_no_new_array [field]:expression_no_name |
+    {primary_name} [array]:primary_no_new_array [field]:name;
+
+array_creation_expression =
+    {primitive} primitive_type dim_expr+ dim* |
+    {class} class_or_interface_type dim_expr+ dim* |
+    {primitive_initializer} primitive_type dim+ array_initializer |
+    {class_initializer} class_or_interface_type dim+ array_initializer;
+
+dim_expr =
+    {expression} [expression]:expression_no_name |
+    {name} [expression]:name;
+
+dim = ;
+
+
+
 
