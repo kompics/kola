@@ -366,7 +366,7 @@ Ignored Tokens
 Productions
 
   java_compilation_unit =
-    compilation_unit {-> New java_compilation_unit(compilation_unit.compilation_unit)};
+    compilation_unit;
 
   // 3.10
 
@@ -428,8 +428,8 @@ Productions
   //  {class} class_type |
   //  {interface} interface_type;
 
-  class_or_interface_type_no_arguments =
-    name {-> New class_or_interface_type_no_arguments(name.name)};
+  class_or_interface_type_no_arguments = 
+    name;
 
   class_or_interface_type =
     type_decl_specifier type_arguments?;
@@ -444,11 +444,11 @@ Productions
   //  {name} name |
   //  {identifier} class_or_interface_type dot identifier;
 
-  type_decl_specifier =
-    name type_decl_specifier_tail*;
+  type_decl_specifier {-> type_decl_specifier} =
+    name type_decl_specifier_tail* {-> New type_decl_specifier(name.name, [type_decl_specifier_tail.args_with_name])};
 
-  type_decl_specifier_tail =
-    type_arguments dot name;
+  type_decl_specifier_tail {-> args_with_name} =
+     type_arguments dot name {-> New args_with_name(type_arguments.type_arguments, name.name)};
 
   // defined differently in 6.5
   //
@@ -482,15 +482,15 @@ Productions
   //  {variable} extends_keyword type_variable |
   //  {class} extends_keyword class_or_interface_type additional_bound_list?;
 
-  type_bound =
-    extends_keyword class_or_interface_type additional_bound_list?;
+  type_bound {-> type_bound} =
+    extends_keyword interface_type additional_bound_list? {-> New type_bound([interface_type, additional_bound_list.interface_type])};
 
-  additional_bound_list =
-    {list} additional_bound additional_bound_list |
-    {bound} additional_bound ;
+  additional_bound_list {-> interface_type*} =
+    {list} additional_bound additional_bound_list {-> [additional_bound.interface_type, additional_bound_list.interface_type]}|
+    {bound} additional_bound {-> [additional_bound.interface_type]};
 
-  additional_bound =
-    amp interface_type;
+  additional_bound {-> interface_type}=
+    amp interface_type {-> interface_type};
 
   // 4.5
 
@@ -501,31 +501,31 @@ Productions
   //   A<B<C>>  and  A<B<C<D>>>
   // Notice the '>>' and '>>>" tokens.
 
-  type_arguments =
-    {gt} lt type_argument_list gt |
-    {shr} [lt1]:lt type_argument_list_head* type_decl_specifier [lt2]:lt type_argument_list shr |
-    {ushr} [lt1]:lt [heads1]:type_argument_list_head* [specifier1]:type_decl_specifier [lt2]:lt [heads2]:type_argument_list_head* [specifier2]:type_decl_specifier [lt3]:lt type_argument_list ushr;
+  type_arguments {-> type_arguments} =
+    {gt} lt type_argument_list gt {-> New type_arguments.gt([type_argument_list.type_argument])} |
+    {shr} [lt1]:lt type_argument_list_head* type_decl_specifier [lt2]:lt type_argument_list shr {-> New type_arguments.shr([type_argument_list_head.type_argument], type_decl_specifier, [type_argument_list.type_argument])} |
+    {ushr} [lt1]:lt [heads1]:type_argument_list_head* [specifier1]:type_decl_specifier [lt2]:lt [heads2]:type_argument_list_head* [specifier2]:type_decl_specifier [lt3]:lt type_argument_list ushr {-> New type_arguments.ushr([heads1.type_argument], specifier1, [heads2.type_argument], specifier2, [type_argument_list.type_argument])};
 
   //type_argument_list =
   //  {argument} type_argument |
   //  {list} type_argument_list comma type_argument;
 
-  type_argument_list =
-    type_argument_list_head* type_argument;
+  type_argument_list {-> type_argument+} =
+    type_argument_list_head* type_argument {-> [type_argument_list_head.type_argument, type_argument]};
 
-  type_argument_list_head =
-    type_argument comma;
+  type_argument_list_head {-> type_argument} =
+    type_argument comma {-> type_argument};
 
   type_argument =
     {reference} reference_type |
     {wildcard} wildcard;
 
-  wildcard =
-    qmark wildcard_bounds?;
+  wildcard {-> wildcard} =
+    qmark wildcard_bounds? {-> New wildcard(wildcard_bounds.wildcard_bounds)};
 
-  wildcard_bounds =
-    {extends} extends_keyword reference_type |
-    {super} super_keyword reference_type;
+  wildcard_bounds {-> wildcard_bounds}=
+    {extends} extends_keyword reference_type {-> New wildcard_bounds.extends(reference_type)} |
+    {super} super_keyword reference_type {-> New wildcard_bounds.super(reference_type)};
 
   // 6.5
 
@@ -555,25 +555,25 @@ Productions
   //  {identifier} identifier |
   //  {ambiguous} ambiguous_name dot identifier;
 
-  name {-> name}=
-    identifier name_tail* {-> New name([identifier.identifier, name_tail.identifier])};
+  name {-> name} =
+    identifier name_tail* {-> New name([identifier, name_tail.identifier])};
 
-  name_tail {-> identifier}=
-    dot identifier {-> identifier.identifier};
+  name_tail {-> identifier} =
+    dot identifier {-> identifier};
 
 
   // 7.3
 
-  compilation_unit =
-    package_declaration? import_declarations? type_declarations?;
+  compilation_unit {-> compilation_unit} =
+    package_declaration? import_declarations? type_declarations? {-> New compilation_unit(package_declaration.package_declaration, [import_declarations.import_declaration], [type_declarations.type_declaration])};
 
-  import_declarations {->import_declaration*} =
+  import_declarations {-> import_declaration*} =
     {declaration} import_declaration {-> [import_declaration.import_declaration]}|
-    {declarations} import_declarations import_declaration {-> [import_declaration.import_declaration, import_declaration.import_declaration]};
+    {declarations} import_declarations import_declaration {-> [import_declarations.import_declaration, import_declaration.import_declaration]};
 
-  type_declarations =
-    {declaration} type_declaration |
-    {declarations} type_declarations type_declaration;
+  type_declarations {-> type_declaration*}=
+    {declaration} type_declaration {-> [type_declaration]} |
+    {declarations} type_declarations type_declaration {-> [type_declarations.type_declaration, type_declaration]};
 
   // 7.4
 
@@ -582,8 +582,8 @@ Productions
 
   // modifiers? instead of annotations?
 
-  package_declaration =
-    modifiers? package_keyword name semi {-> New package_declaration([modifiers.modifier, name])};
+  package_declaration {-> package_declaration} =
+    modifiers? package_keyword name semi {-> New package_declaration([modifiers.modifier], name)};
 
   // 7.5
 
@@ -628,8 +628,8 @@ Productions
     {class} normal_class_declaration |
     {enum} enum_declaration;
 
-  normal_class_declaration =
-    modifiers? class_keyword identifier type_parameters? super? interfaces? class_body;
+  normal_class_declaration {-> normal_class_declaration} =
+    modifiers? class_keyword identifier type_parameters? super? interfaces? class_body {-> New normal_class_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], super.class_type, [interfaces.interface_type], class_body)};
 
   // Replaced by modifiers production
 
@@ -637,9 +637,9 @@ Productions
   //  {modifier} class_modifier |
   //  {modifiers} class_modifiers class_modifier;
 
-  modifiers =
-    {modifier} modifier |
-    {modifiers} modifiers modifier;
+  modifiers {-> modifier*} =
+    {modifier} modifier {-> [modifier]}|
+    {modifiers} modifiers modifier {-> [modifiers.modifier, modifier]};
 
   // Replaced by modifier production
 
@@ -667,29 +667,29 @@ Productions
     {synchronized} synchronized_keyword |
     {native} native_keyword;
 
-  type_parameters =
-    lt type_parameter_list gt;
+  type_parameters {-> type_parameter*} =
+    lt type_parameter_list gt {-> [type_parameter_list.type_parameter]};
 
-  type_parameter_list =
-    {list} type_parameter_list comma type_parameter |
-    {parameter} type_parameter;
+  type_parameter_list {-> type_parameter*} =
+    {list} type_parameter_list comma type_parameter {-> [type_parameter_list.type_parameter, type_parameter]}|
+    {parameter} type_parameter {-> [type_parameter]};
 
-  super =
-    extends_keyword class_type;
+  super {-> class_type} =
+    extends_keyword class_type {-> class_type};
 
-  interfaces =
-    implements_keyword interface_type_list;
+  interfaces {-> interface_type*} =
+    implements_keyword interface_type_list {-> [interface_type_list.interface_type]};
 
-  interface_type_list =
-    {type} interface_type |
-    {list} interface_type_list comma interface_type;
+  interface_type_list {-> interface_type*} =
+    {type} interface_type {-> [interface_type]} |
+    {list} interface_type_list comma interface_type {-> [interface_type_list.interface_type, interface_type]};
 
-  class_body =
-    l_brc class_body_declarations? r_brc;
+  class_body {-> class_body} =
+    l_brc class_body_declarations? r_brc {-> New class_body([class_body_declarations.class_body_declaration])};
 
-  class_body_declarations =
-    {declaration} class_body_declaration |
-    {declarations} class_body_declarations class_body_declaration;
+  class_body_declarations {-> class_body_declaration*} =
+    {declaration} class_body_declaration {-> [class_body_declaration]} |
+    {declarations} class_body_declarations class_body_declaration {-> [class_body_declarations.class_body_declaration, class_body_declaration]};
 
   class_body_declaration =
     {member} class_member_declaration |
@@ -706,21 +706,21 @@ Productions
 
   // 8.3
 
-  field_declaration =
-    modifiers? type variable_declarators semi;
+  field_declaration {-> field_declaration} =
+    modifiers? type variable_declarators semi {-> New field_declaration([modifiers.modifier], type, [variable_declarators.variable_declarator])};
 
-  variable_declarators =
-    {declarator} variable_declarator |
-    {declarators} variable_declarators comma variable_declarator;
+  variable_declarators {-> variable_declarator*} =
+    {declarator} variable_declarator {-> [variable_declarator.variable_declarator]} |
+    {declarators} variable_declarators comma variable_declarator {-> [variable_declarators.variable_declarator, variable_declarator.variable_declarator]};
 
   //variable_declarator =
   //  {id} variable_declarator_id |
   //  {initializer} variable_declarator_id assign variable_initializer;
 
-  variable_declarator =
-    {id} variable_declarator_id |
-    {initializer} variable_declarator_id assign variable_initializer_no_name |
-    {initializer_name} variable_declarator_id assign name;
+  variable_declarator {-> variable_declarator} =
+    {id} variable_declarator_id {-> New variable_declarator.id(variable_declarator_id)}|
+    {initializer} variable_declarator_id assign variable_initializer_no_name {-> New variable_declarator.initializer(variable_declarator_id, variable_initializer_no_name.variable_initializer)}|
+    {initializer_name} variable_declarator_id assign name {-> New variable_declarator.initializer_name(variable_declarator_id, name)};
 
   //variable_declarator_id =
   //  {identifier} identifier |
@@ -733,9 +733,9 @@ Productions
   //  {expression} expression |
   //  {initializer} array_initializer;
 
-  variable_initializer_no_name =
-    {expression} expression_no_name |
-    {initializer} array_initializer;
+  variable_initializer_no_name {-> variable_initializer} =
+    {expression} expression_no_name {-> New variable_initializer.expression(New expression.expression(expression_no_name.expression_no_name))}|
+    {initializer} array_initializer {-> New variable_initializer.initializer(array_initializer.array_initializer)};
 
   // Replaced by modifiers production
 
@@ -760,26 +760,26 @@ Productions
   method_declaration =
     method_header method_body;
 
-  method_header =
-    modifiers? type_parameters? result method_declarator throws?;
+  method_header {-> method_header} =
+    modifiers? type_parameters? result method_declarator throws? {-> New method_header([modifiers.modifier], [type_parameters.type_parameter], result, method_declarator, throws)};
 
   //method_declarator =
   //  {identifier} identifier l_par formal_parameter_list? r_par |
   //  {declarator} method_declarator l_bkt r_bkt;
 
-  method_declarator =
-    identifier l_par formal_parameter_list? r_par dim*;
+  method_declarator {-> method_declarator} =
+    identifier l_par formal_parameter_list? r_par dim* {-> New method_declarator(identifier, formal_parameter_list, [dim])};
 
-  formal_parameter_list =
-    {parameter} last_formal_parameter |
-    {parameters} formal_parameters comma last_formal_parameter;
+  formal_parameter_list {-> formal_parameter_list} =
+    {parameter} last_formal_parameter {-> New formal_parameter_list.parameter(last_formal_parameter.last_formal_parameter)}|
+    {parameters} formal_parameters comma last_formal_parameter {-> New formal_parameter_list.parameters([formal_parameters.formal_parameter], last_formal_parameter.last_formal_parameter)};
 
-  formal_parameters =
-    {parameter} formal_parameter |
-    {parameters} formal_parameters comma formal_parameter;
+  formal_parameters {-> formal_parameter*} =
+    {parameter} formal_parameter {-> [formal_parameter.formal_parameter]}|
+    {parameters} formal_parameters comma formal_parameter {-> [formal_parameters.formal_parameter, formal_parameter.formal_parameter]};
 
-  formal_parameter =
-    modifiers? type variable_declarator_id;
+  formal_parameter {-> formal_parameter} =
+    modifiers? type variable_declarator_id {-> New formal_parameter([modifiers.modifier], type, variable_declarator_id)};
 
   // Replaced by modifiers production
 
@@ -793,9 +793,9 @@ Productions
   //  {annotation} annotation |
   //  {final} final_keyword;
 
-  last_formal_parameter =
-    {variable} modifiers? type dot_dot_dot variable_declarator_id |
-    {formal} formal_parameter;
+  last_formal_parameter {-> last_formal_parameter}=
+    {variable} modifiers? type dot_dot_dot variable_declarator_id {-> New last_formal_parameter.variable(New formal_parameter([modifiers.modifier], type, variable_declarator_id))} |
+    {formal} formal_parameter {-> New last_formal_parameter.formal(formal_parameter.formal_parameter)};
 
   // Replaced by modifiers production
 
@@ -821,12 +821,12 @@ Productions
     {type} type |
     {void} void_keyword;
 
-  throws =
-    throws_keyword exception_type_list;
+  throws {-> throws} =
+    throws_keyword exception_type_list {-> New throws([exception_type_list.exception_type])};
 
-  exception_type_list =
-    {type} exception_type |
-    {list} exception_type_list comma exception_type;
+  exception_type_list {-> exception_type+} =
+    {type} exception_type {-> [exception_type]}|
+    {list} exception_type_list comma exception_type {-> [exception_type_list.exception_type, exception_type]};
 
   //exception_type =
   //  {name} name |
@@ -847,16 +847,16 @@ Productions
 
   // 8.7
 
-  static_initializer =
-    static_keyword block;
+  static_initializer {-> static_initializer} =
+    static_keyword block {-> New static_initializer(block)};
 
   // 8.8
 
-  constructor_declaration =
-    modifiers? constructor_declarator throws? constructor_body;
+  constructor_declaration {-> constructor_declaration} =
+    modifiers? constructor_declarator throws? constructor_body {-> New constructor_declaration([modifiers.modifier], constructor_declarator.constructor_declarator, throws.throws, constructor_body.constructor_body)};
 
-  constructor_declarator =
-    type_parameters? simple_type_name l_par formal_parameter_list? r_par;
+  constructor_declarator {-> constructor_declarator} =
+    type_parameters? simple_type_name l_par formal_parameter_list? r_par {-> New constructor_declarator([type_parameters.type_parameter], simple_type_name, formal_parameter_list)};
 
   // Missing from JLS
 
@@ -877,46 +877,46 @@ Productions
   //  {protected} protected_keyword |
   //  {private} private_keyword;
 
-  constructor_body =
-    l_brc explicit_constructor_invocation? block_statements? r_brc;
+  constructor_body {-> constructor_body} =
+    l_brc explicit_constructor_invocation? block_statements? r_brc {-> New constructor_body(explicit_constructor_invocation, [block_statements.block_statement])};
 
-  explicit_constructor_invocation =
-    {this} non_wild_type_arguments? this_keyword l_par argument_list? r_par semi |
-    {super} non_wild_type_arguments? super_keyword l_par argument_list? r_par semi |
-    {primary} primary dot non_wild_type_arguments? super_keyword l_par argument_list? r_par semi;
+  explicit_constructor_invocation {-> explicit_constructor_invocation} =
+    {this} non_wild_type_arguments? this_keyword l_par argument_list? r_par semi {-> New explicit_constructor_invocation.this([non_wild_type_arguments.reference_type], [argument_list.argument])} |
+    {super} non_wild_type_arguments? super_keyword l_par argument_list? r_par semi {-> New explicit_constructor_invocation.super([non_wild_type_arguments.reference_type], [argument_list.argument])}|
+    {primary} primary dot non_wild_type_arguments? super_keyword l_par argument_list? r_par semi {-> New explicit_constructor_invocation.primary(primary.expression_no_name, [non_wild_type_arguments.reference_type], [argument_list.argument])};
 
-  non_wild_type_arguments =
-    lt reference_type_list gt;
+  non_wild_type_arguments {-> reference_type*} =
+    lt reference_type_list gt {-> [reference_type_list.reference_type]};
 
-  reference_type_list =
-    {type} reference_type |
-    {list} reference_type_list comma reference_type;
+  reference_type_list {-> reference_type*} =
+    {type} reference_type {-> [reference_type]} |
+    {list} reference_type_list comma reference_type {-> [reference_type_list.reference_type, reference_type]};
 
   // 8.9
 
-  enum_declaration =
-    modifiers? enum_keyword identifier interfaces? enum_body;
+  enum_declaration {-> enum_declaration} =
+    modifiers? enum_keyword identifier interfaces? enum_body {-> New enum_declaration([modifiers.modifier], identifier, [interfaces.interface_type], enum_body.enum_body)};
 
-  enum_body =
-    l_brc enum_constants? comma? enum_body_declarations? r_brc;
+  enum_body {-> enum_body} =
+    l_brc enum_constants? comma? enum_body_declarations? r_brc {-> New enum_body([enum_constants.enum_constant], [enum_body_declarations.class_body_declaration])};
 
-  enum_constants =
-    {constant} enum_constant |
-    {constants} enum_constants comma enum_constant;
+  enum_constants {-> enum_constant*} =
+    {constant} enum_constant {-> [enum_constant.enum_constant]} |
+    {constants} enum_constants comma enum_constant {-> [enum_constants.enum_constant, enum_constant.enum_constant]};
 
   //enum_constant =
   //  annotations? identifier arguments? class_body?;
 
   // modifiers? instead of annotations?
 
-  enum_constant =
-    modifiers? identifier arguments? class_body?;
+  enum_constant {-> enum_constant} =
+    modifiers? identifier arguments? class_body? {-> New enum_constant([modifiers.modifier], identifier, [arguments.argument], class_body)};
 
-  arguments =
-    l_par argument_list? r_par;
+  arguments {-> argument*} =
+    l_par argument_list? r_par {-> [argument_list.argument]};
 
-  enum_body_declarations =
-    semi class_body_declarations?;
+  enum_body_declarations {-> class_body_declaration*} =
+    semi class_body_declarations? {-> [class_body_declarations.class_body_declaration]};
 
   // 9.1
 
@@ -926,8 +926,8 @@ Productions
 
   // Includes correction to erroneous split in two alternatives in JLS
 
-  normal_interface_declaration =
-    modifiers? interface_keyword identifier type_parameters? extends_interfaces? interface_body;
+  normal_interface_declaration {-> normal_interface_declaration} =
+    modifiers? interface_keyword identifier type_parameters? extends_interfaces? interface_body {-> New normal_interface_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], [extends_interfaces.interface_type], interface_body.interface_body)};
 
   // Replaced by modifiers production
 
@@ -946,15 +946,15 @@ Productions
   //  {static} static_keyword |
   //  {strictfp} strictfp_keyword;
 
-  extends_interfaces =
-    extends_keyword interface_type_list;
+  extends_interfaces {-> interface_type*} =
+    extends_keyword interface_type_list {-> [interface_type_list.interface_type]};
 
-  interface_body =
-    l_brc interface_member_declarations? r_brc;
+  interface_body {-> interface_body} =
+    l_brc interface_member_declarations? r_brc {-> New interface_body([interface_member_declarations.interface_member_declaration])};
 
-  interface_member_declarations =
-    {declaration} interface_member_declaration |
-    {declarations} interface_member_declarations interface_member_declaration;
+  interface_member_declarations {-> interface_member_declaration*} =
+    {declaration} interface_member_declaration {-> [interface_member_declaration]}|
+    {declarations} interface_member_declarations interface_member_declaration {-> [interface_member_declarations.interface_member_declaration, interface_member_declaration]};
 
   interface_member_declaration =
      {constant} constant_declaration |
@@ -965,8 +965,8 @@ Productions
 
   // 9.3
 
-  constant_declaration =
-    modifiers? type variable_declarators semi;
+  constant_declaration {-> constant_declaration} =
+    modifiers? type variable_declarators semi {-> New constant_declaration([modifiers.modifier], type, [variable_declarators.variable_declarator])};
 
   // Replaced by modifiers production
 
@@ -984,8 +984,8 @@ Productions
 
   // 9.4
 
-  abstract_method_declaration =
-    modifiers? type_parameters? result method_declarator throws? semi;
+  abstract_method_declaration {-> abstract_method_declaration} =
+    modifiers? type_parameters? result method_declarator throws? semi {-> New abstract_method_declaration([modifiers.modifier], [type_parameters.type_parameter], result, method_declarator, throws)};
 
   // Replaced by modifiers production
 
@@ -1002,15 +1002,15 @@ Productions
 
   // 9.6
 
-  annotation_type_declaration =
-    modifiers? at interface_keyword identifier annotation_type_body;
+  annotation_type_declaration {-> annotation_type_declaration} =
+    modifiers? at interface_keyword identifier annotation_type_body {-> New annotation_type_declaration([modifiers.modifier], identifier, annotation_type_body.annotation_type_body)};
 
-  annotation_type_body =
-    l_brc annotation_type_element_declarations? r_brc;
+  annotation_type_body {-> annotation_type_body} =
+    l_brc annotation_type_element_declarations? r_brc {-> New annotation_type_body([annotation_type_element_declarations.annotation_type_element_declaration])};
 
-  annotation_type_element_declarations =
-    {declaration} annotation_type_element_declaration |
-    {declarations} annotation_type_element_declarations annotation_type_element_declaration;
+  annotation_type_element_declarations {-> annotation_type_element_declaration*} =
+    {declaration} annotation_type_element_declaration {-> [annotation_type_element_declaration.annotation_type_element_declaration]}|
+    {declarations} annotation_type_element_declarations annotation_type_element_declaration {-> [annotation_type_element_declarations.annotation_type_element_declaration, annotation_type_element_declaration.annotation_type_element_declaration]};
 
   //annotation_type_element_declaration =
   //  {abstract} modifiers? type identifier l_par r_par dims? default_value? semi |
@@ -1021,15 +1021,15 @@ Productions
   //  {annotation} annotation_type_declaration |
   //  {semi} semi;
 
-  annotation_type_element_declaration =
-    {abstract} modifiers? type identifier l_par r_par dim* default_value? semi |
-    {constant} constant_declaration |
-    {class} class_declaration |
-    {interface} interface_declaration |
-    {semi} semi;
+  annotation_type_element_declaration {-> annotation_type_element_declaration} =
+    {abstract} modifiers? type identifier l_par r_par dim* default_value? semi {-> New annotation_type_element_declaration.abstract([modifiers.modifier], type, identifier, default_value.element_value)} |
+    {constant} constant_declaration {-> New annotation_type_element_declaration.constant(constant_declaration.constant_declaration)} |
+    {class} class_declaration {-> New annotation_type_element_declaration.class(class_declaration.class_declaration)} |
+    {interface} interface_declaration {-> New annotation_type_element_declaration.interface(interface_declaration.interface_declaration)} |
+    {semi} semi {-> New annotation_type_element_declaration.semi(semi)};
 
-  default_value =
-    default_keyword element_value;
+  default_value {-> element_value} =
+    default_keyword element_value {-> element_value};
 
   // 9.7
 
@@ -1042,10 +1042,10 @@ Productions
     {marker_annotation} marker_annotation |
     {single} single_element_annotation;
 
-  normal_annotation =
-    at name l_par element_value_pairs? r_par;
+  normal_annotation {-> normal_annotation} =
+    at name l_par element_value_pairs? r_par {-> New normal_annotation(name, [element_value_pairs.element_value_pair])};
 
-  element_value_pairs {-> element_value_pair*}=
+  element_value_pairs {-> element_value_pair*} =
     {pair} element_value_pair {-> [element_value_pair.element_value_pair]}|
     {pairs} element_value_pairs comma element_value_pair {-> [element_value_pairs.element_value_pair, element_value_pair.element_value_pair]};
 
@@ -1057,67 +1057,67 @@ Productions
   //  {annotation} annotation |
   //  {array} element_value_array_initializer;
 
-  element_value =
-    {conditional} conditional_expression_no_name |
-    {name} name |
-    {annotation} annotation |
-    {array} element_value_array_initializer;
+  element_value {-> element_value} =
+    {conditional} conditional_expression_no_name {-> New element_value.conditional(New expression.expression(conditional_expression_no_name.expression_no_name))} |
+    {name} name {-> New element_value.conditional(New expression.name(name.name))} |
+    {annotation} annotation {-> New element_value.annotation(annotation)} |
+    {array} element_value_array_initializer {-> New element_value.array(element_value_array_initializer.element_value_array_initializer)};
 
-  element_value_array_initializer =
-    l_brc element_values? comma? r_brc;
+  element_value_array_initializer {-> element_value_array_initializer} =
+    l_brc element_values? comma? r_brc {-> New element_value_array_initializer([element_values.element_value])};
 
-  element_values =
-    {value} element_value |
-    {values} element_values comma element_value;
+  element_values {-> element_value*} =
+    {value} element_value {-> [element_value.element_value]} |
+    {values} element_values comma element_value {-> [element_values.element_value, element_value.element_value]};
 
-  marker_annotation =
-    at identifier;
+  marker_annotation {-> marker_annotation} =
+    at identifier {-> New marker_annotation(identifier)};
 
-  single_element_annotation =
-    at identifier l_par element_value r_par;
+  single_element_annotation {-> single_element_annotation} =
+    at identifier l_par element_value r_par {-> New single_element_annotation(identifier, element_value.element_value)};
 
   // 10.6
 
   //array_initializer =
   //  l_brc variable_initializers? comma? r_brc;
 
-  array_initializer =
-    {variable} l_brc variable_initializers_no_name? comma? r_brc |
-    {name} l_brc name comma? r_brc;
+  array_initializer {-> array_initializer} =
+    {variable} l_brc variable_initializers_no_name? comma? r_brc {-> New array_initializer.variable([variable_initializers_no_name.variable_initializer])} |
+    {name} l_brc name comma? r_brc {-> New array_initializer.name(name.name)};
 
   //variable_initializers =
   //  {initializer} variable_initializer |
   //  {initializers} variable_initializers comma variable_initializer;
 
-  variable_initializers_no_name =
-    {variable} variable_initializer_no_name variable_initializers_tail* |
-    {name} name variable_initializers_tail+;
+  variable_initializers_no_name {-> variable_initializer*} =
+    {variable} variable_initializer_no_name variable_initializers_tail* {-> [variable_initializer_no_name.variable_initializer, variable_initializers_tail.variable_initializer]} |
+    {name} name variable_initializers_tail+ {-> [New variable_initializer.expression(New expression.name(name.name)), variable_initializers_tail.variable_initializer]};
 
-  variable_initializers_tail =
-    {variable} comma variable_initializer_no_name |
-    {name} comma name;
+  variable_initializers_tail {-> variable_initializer} =
+    {variable} comma variable_initializer_no_name {-> variable_initializer_no_name.variable_initializer} |
+    {name} comma name {-> New variable_initializer.expression(New expression.name(name.name))};
 
   // 14.2
 
-  block =
-    l_brc block_statements? r_brc;
+  block {-> block} =
+    l_brc block_statements? r_brc {-> New block([block_statements.block_statement])};
 
-  block_statements =
-    {statement} block_statement |
-    {statements} block_statements block_statement;
+  block_statements {-> block_statement*} =
+    {statement} block_statement {-> [block_statement]}|
+    {statements} block_statements block_statement {-> [block_statements.block_statement, block_statement]};
 
-  block_statement =
-    {variable} local_variable_declaration_statement |
-    {class} class_declaration |
-    {statement} statement;
+  block_statement {-> block_statement} =
+    {variable} local_variable_declaration_statement {-> New block_statement.variable(local_variable_declaration_statement.local_variable_declaration)} |
+    {class} class_declaration {-> New block_statement.class(class_declaration)} |
+    {statement} statement {-> New block_statement.statement(statement)};
 
   // 14.4
 
-  local_variable_declaration_statement =
-    local_variable_declaration semi;
+  local_variable_declaration_statement {-> local_variable_declaration} =
+    local_variable_declaration semi {-> local_variable_declaration.local_variable_declaration};
 
-  local_variable_declaration =
-    modifiers? type variable_declarators;
+  local_variable_declaration {-> local_variable_declaration} =
+    modifiers? type variable_declarators {-> New local_variable_declaration([modifiers.modifier], type, [variable_declarators.variable_declarator])};
 
   // 14.5
 
@@ -1145,24 +1145,24 @@ Productions
 
     // Modded for Kola
 
-  statement_without_trailing_substatement =
-    {block} block |
-    {empty_statement} empty_statement |
-    {expression_statement} expression_statement |
-    {assert_statement} assert_statement |
-    {switch_statement} switch_statement |
-    {do_statement} do_statement |
-    {break_statement} break_statement |
-    {continue_statement} continue_statement |
-    {return_statement} return_statement |
-    {synchronized_statement} synchronized_statement |
-    {throw_statement} throw_statement |
-    {try_statement} try_statement |
-    {connect} connect_statement |
-    {disconnect} disconnect_statement |
-    {subscribe} subscribe_statement |
-    {unsubscribe} unsubscribe_statement |
-    {trigger} trigger_statement;
+  statement_without_trailing_substatement {-> statement_without_trailing_substatement} =
+    {block} block {-> New statement_without_trailing_substatement.block(block.block)} |
+    {empty_statement} empty_statement {-> New statement_without_trailing_substatement.empty_statement()} |
+    {expression_statement} expression_statement {-> New statement_without_trailing_substatement.expression_statement(expression_statement.statement_expression)} |
+    {assert_statement} assert_statement {-> New statement_without_trailing_substatement.assert_statement(assert_statement.assert_statement)} |
+    {switch_statement} switch_statement {-> New statement_without_trailing_substatement.switch_statement(switch_statement.switch_statement)} |
+    {do_statement} do_statement {-> New statement_without_trailing_substatement.do_statement(do_statement.do_statement)} |
+    {break_statement} break_statement {-> New statement_without_trailing_substatement.break_statement(break_statement.break_statement)} |
+    {continue_statement} continue_statement {-> New statement_without_trailing_substatement.continue_statement(continue_statement.continue_statement)} |
+    {return_statement} return_statement {-> New statement_without_trailing_substatement.return_statement(return_statement.return_statement)} |
+    {synchronized_statement} synchronized_statement {-> New statement_without_trailing_substatement.synchronized_statement(synchronized_statement.synchronized_statement)} |
+    {throw_statement} throw_statement {-> New statement_without_trailing_substatement.throw_statement(throw_statement.throw_statement)} |
+    {try_statement} try_statement {-> New statement_without_trailing_substatement.try_statement(try_statement.try_statement)} |
+    {connect} connect_statement {-> New statement_without_trailing_substatement.connect(connect_statement.connect_statement)} |
+    {disconnect} disconnect_statement {-> New statement_without_trailing_substatement.disconnect(disconnect_statement.disconnect_statement)} |
+    {subscribe} subscribe_statement {-> New statement_without_trailing_substatement.subscribe(subscribe_statement.subscribe_statement)} |
+    {unsubscribe} unsubscribe_statement {-> New statement_without_trailing_substatement.unsubscribe(unsubscribe_statement.unsubscribe_statement)} |
+    {trigger} trigger_statement {-> New statement_without_trailing_substatement.trigger(trigger_statement.trigger_statement)};
 
   statement_no_short_if =
     {without_trailing_substatement} statement_without_trailing_substatement |
@@ -1177,48 +1177,48 @@ Productions
 
   // 14.7
 
-  labeled_statement =
-    identifier colon statement;
+  labeled_statement {-> labeled_statement} =
+    identifier colon statement {-> New labeled_statement(identifier, statement)};
 
-  labeled_statement_no_short_if =
-    identifier colon statement_no_short_if;
+  labeled_statement_no_short_if {-> labeled_statement_no_short_if} =
+    identifier colon statement_no_short_if {-> New labeled_statement_no_short_if(identifier, statement_no_short_if)};
 
   // 14.8
 
-  expression_statement =
-    statement_expression semi;
+  expression_statement {-> statement_expression} =
+    statement_expression semi {-> New statement_expression(statement_expression.expression_no_name)};
 
-  statement_expression =
-    {assignment} assignment |
-    {pre_increment} pre_increment_expression |
-    {pre_decrement} pre_decrement_expression |
-    {post_increment} post_increment_expression |
-    {post_decrement} post_decrement_expression |
-    {method} method_invocation |
-    {class} class_instance_creation_expression;
+  statement_expression {-> expression_no_name} =
+    {assignment} assignment {-> assignment.expression_no_name} |
+    {pre_increment} pre_increment_expression {-> pre_increment_expression.expression_no_name} |
+    {pre_decrement} pre_decrement_expression {-> pre_decrement_expression.expression_no_name} |
+    {post_increment} post_increment_expression {-> post_increment_expression.expression_no_name} |
+    {post_decrement} post_decrement_expression {-> post_decrement_expression.expression_no_name} |
+    {method} method_invocation {-> New expression_no_name.method(method_invocation)} |
+    {class} class_instance_creation_expression {-> New expression_no_name.instance(class_instance_creation_expression.class_instance_creation_expression)};
 
   // 14.9
 
   //if_then_statement =
   //  if_keyword l_par expression r_par statement;
 
-  if_then_statement =
-    {expression} if_keyword l_par expression_no_name r_par statement |
-    {name} if_keyword l_par name r_par statement;
+  if_then_statement {-> if_then_statement} =
+    {expression} if_keyword l_par expression_no_name r_par statement {-> New if_then_statement(New expression.expression(expression_no_name.expression_no_name), statement)} |
+    {name} if_keyword l_par name r_par statement {-> New if_then_statement(New expression.name(name.name), statement)};
 
   //if_then_else_statement =
   //  if_keyword l_par expression r_par statement_no_short_if else_keyword statement;
 
-  if_then_else_statement =
-    {expression} if_keyword l_par expression_no_name r_par statement_no_short_if else_keyword statement |
-    {name} if_keyword l_par name r_par statement_no_short_if else_keyword statement;
+  if_then_else_statement {-> if_then_else_statement} =
+    {expression} if_keyword l_par expression_no_name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if, statement)} |
+    {name} if_keyword l_par name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.name(name.name), statement_no_short_if, statement)};
 
   //if_then_else_statement_no_short_if =
   //  if_keyword l_par expression r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if;
 
-  if_then_else_statement_no_short_if =
-    {expression} if_keyword l_par expression_no_name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if |
-    {name} if_keyword l_par name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if;
+  if_then_else_statement_no_short_if {-> if_then_else_statement_no_short_if} =
+    {expression} if_keyword l_par expression_no_name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement_no_short_if(New expression.expression(expression_no_name.expression_no_name), then_statement, else_statement)} |
+    {name} if_keyword l_par name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement_no_short_if(New expression.name(name.name), then_statement, else_statement)};
 
   // 14.10
 
@@ -1226,36 +1226,36 @@ Productions
   //  {assert} assert_keyword expression semi |
   //  {expression} assert_keyword [expression1]:expression colon [expression2]:expression semi;
 
-  assert_statement =
-    {assert} assert_keyword expression_no_name semi |
-    {assert_name} assert_keyword name semi |
-    {expression} assert_keyword [expression1]:expression_no_name colon [expression2]:expression_no_name semi |
-    {expression_name2} assert_keyword [expression1]:expression_no_name colon [expression2]:name semi |
-    {expression_name1} assert_keyword [expression1]:name colon [expression2]:expression_no_name semi |
-    {expression_name1_name2} assert_keyword [expression1]:name colon [expression2]:name semi;
+  assert_statement {-> assert_statement} =
+    {assert} assert_keyword expression_no_name semi {-> New assert_statement.simple(New expression.expression(expression_no_name.expression_no_name))} |
+    {assert_name} assert_keyword name semi {-> New assert_statement.simple(New expression.name(name.name))} |
+    {expression} assert_keyword [expression1]:expression_no_name colon [expression2]:expression_no_name semi {-> New assert_statement.details(New expression.expression(expression1.expression_no_name), New expression.expression(expression2.expression_no_name))} |
+    {expression_name2} assert_keyword [expression1]:expression_no_name colon [expression2]:name semi {-> New assert_statement.details(New expression.expression(expression1.expression_no_name), New expression.name(expression2.name))} |
+    {expression_name1} assert_keyword [expression1]:name colon [expression2]:expression_no_name semi {-> New assert_statement.details(New expression.name(expression1.name), New expression.expression(expression2.expression_no_name))} |
+    {expression_name1_name2} assert_keyword [expression1]:name colon [expression2]:name semi {-> New assert_statement.details(New expression.name(expression1.name), New expression.name(expression2.name))};
 
   // 14.11
 
   //switch_statement =
   //  switch_keyword l_par expression r_par switch_block;
 
-  switch_statement =
-    {expression} switch_keyword l_par expression_no_name r_par switch_block |
-    {name} switch_keyword l_par name r_par switch_block;
+  switch_statement {-> switch_statement} =
+    {expression} switch_keyword l_par expression_no_name r_par switch_block {-> New switch_statement(New expression.expression(expression_no_name.expression_no_name), switch_block.switch_block)} |
+    {name} switch_keyword l_par name r_par switch_block {-> New switch_statement(New expression.name(name.name), switch_block.switch_block)};
 
-  switch_block =
-    l_brc switch_block_statement_groups? switch_labels? r_brc;
+  switch_block {-> switch_block} =
+    l_brc switch_block_statement_groups? switch_labels? r_brc {-> New switch_block([switch_block_statement_groups.switch_block_statement_group], [switch_labels.switch_label])};
 
-  switch_block_statement_groups =
-    {group} switch_block_statement_group |
-    {groups} switch_block_statement_groups switch_block_statement_group;
+  switch_block_statement_groups {-> switch_block_statement_group*} =
+    {group} switch_block_statement_group {-> [switch_block_statement_group.switch_block_statement_group]} |
+    {groups} switch_block_statement_groups switch_block_statement_group {-> [switch_block_statement_groups.switch_block_statement_group, switch_block_statement_group.switch_block_statement_group]};
 
-  switch_block_statement_group =
-    switch_labels block_statements;
+  switch_block_statement_group {-> switch_block_statement_group} =
+    switch_labels block_statements {-> New switch_block_statement_group([switch_labels.switch_label], [block_statements.block_statement])};
 
-  switch_labels =
-    {label} switch_label |
-    {labels} switch_labels switch_label;
+  switch_labels {-> switch_label*} =
+    {label} switch_label {-> [switch_label.switch_label]} |
+    {labels} switch_labels switch_label {-> [switch_labels.switch_label, switch_label.switch_label]};
 
   //switch_label =
   //  {constant} case_keyword constant_expression colon |
@@ -1268,10 +1268,10 @@ Productions
   //  {enum} case_keyword enum_constant_name colon |
   //  {default} default_keyword colon;
 
-  switch_label =
-    {constant} case_keyword constant_expression_no_name colon |
-    {constant_name} case_keyword name colon |
-    {default} default_keyword colon;
+  switch_label {-> switch_label} =
+    {constant} case_keyword constant_expression_no_name colon {-> New switch_label.constant(constant_expression_no_name)} |
+    {constant_name} case_keyword name colon {-> New switch_label.constant_name(name.name)} |
+    {default} default_keyword colon {-> New switch_label.default(default_keyword)};
 
   //enum_constant_name =
   //  identifier;
@@ -1281,25 +1281,25 @@ Productions
   //while_statement =
   //  while_keyword l_par expression r_par statement;
 
-  while_statement =
-    {expression} while_keyword l_par expression_no_name r_par statement |
-    {name} while_keyword l_par name r_par statement;
+  while_statement {-> while_statement} =
+    {expression} while_keyword l_par expression_no_name r_par statement {-> New while_statement(New expression.expression(expression_no_name.expression_no_name), statement)} |
+    {name} while_keyword l_par name r_par statement {-> New while_statement(New expression.name(name.name), statement)};
 
   //while_statement_no_short_if =
   //  while_keyword l_par expression r_par statement_no_short_if;
 
-  while_statement_no_short_if =
-    {expression} while_keyword l_par expression_no_name r_par statement_no_short_if |
-    {name} while_keyword l_par name r_par statement_no_short_if;
+  while_statement_no_short_if {-> while_statement_no_short_if} =
+    {expression} while_keyword l_par expression_no_name r_par statement_no_short_if {-> New while_statement_no_short_if(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if)} |
+    {name} while_keyword l_par name r_par statement_no_short_if {-> New while_statement_no_short_if(New expression.name(name.name), statement_no_short_if)};
 
   // 14.13
 
   //do_statement =
   //  do_keyword statement while_keyword l_par expression r_par semi;
 
-  do_statement =
-    {expression} do_keyword statement while_keyword l_par expression_no_name r_par semi |
-    {name} do_keyword statement while_keyword l_par name r_par semi;
+  do_statement {-> do_statement} =
+    {expression} do_keyword statement while_keyword l_par expression_no_name r_par semi {-> New do_statement(statement, New expression.expression(expression_no_name.expression_no_name))}|
+    {name} do_keyword statement while_keyword l_par name r_par semi {-> New do_statement(statement, New expression.name(name.name))};
 
   // 14.4
 
@@ -1310,101 +1310,102 @@ Productions
   //basic_for_statement =
   //  for_keyword l_par for_init? [semi1]:semi expression? [semi2]:semi for_update? r_par statement;
 
-  basic_for_statement =
-    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement |
-    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement;
+  basic_for_statement {-> basic_for_statement} =
+    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement {-> New basic_for_statement.expression(for_init.for_init, expression_no_name.expression_no_name, for_update.for_update, statement)} |
+    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement {-> New basic_for_statement.name(for_init.for_init, name.name, for_update.for_update, statement)};
 
   //for_statement_no_short_if =
   //  for_keyword l_par for_init? [semi1]:semi expression? [semi2]:semi for_update? r_par statement_no_short_if;
 
-  for_statement_no_short_if =
-    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement_no_short_if |
-    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement_no_short_if;
+  for_statement_no_short_if {-> for_statement_no_short_if} =
+    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement_no_short_if {-> New for_statement_no_short_if.expression(for_init.for_init, expression_no_name.expression_no_name, for_update.for_update, statement_no_short_if)} |
+    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement_no_short_if {-> New for_statement_no_short_if.name(for_init.for_init, name.name, for_update.for_update, statement_no_short_if)};
 
-  for_init =
-    {statement} statement_expression_list |
-    {local} local_variable_declaration;
+  for_init {-> for_init} =
+    {statement} statement_expression_list {-> New for_init.statement([statement_expression_list.expression_no_name])} |
+    {local} local_variable_declaration {-> New for_init.local(local_variable_declaration)};
 
-  for_update =
-    statement_expression_list;
+  for_update {-> for_update} =
+    statement_expression_list {-> New for_update([statement_expression_list.expression_no_name])};
 
-  statement_expression_list =
-    {expression} statement_expression |
-    {list} statement_expression_list comma statement_expression;
+  statement_expression_list {-> expression_no_name+} =
+    {expression} statement_expression {-> [statement_expression.expression_no_name]} |
+    {list} statement_expression_list comma statement_expression {-> [statement_expression_list.expression_no_name, statement_expression.expression_no_name]};
 
   //enhanced_for_statement =
   //  for_keyword l_par formal_parameter colon expression r_par statement;
 
-  enhanced_for_statement =
-    {expression} for_keyword l_par formal_parameter colon expression_no_name r_par statement |
-    {name} for_keyword l_par formal_parameter colon name r_par statement;
+  enhanced_for_statement {-> enhanced_for_statement} =
+    {expression} for_keyword l_par formal_parameter colon expression_no_name r_par statement {-> New enhanced_for_statement(formal_parameter, New expression.expression(expression_no_name.expression_no_name), statement)} |
+    {name} for_keyword l_par formal_parameter colon name r_par statement {-> New enhanced_for_statement(formal_parameter, New expression.name(name.name), statement)};
 
   // 14.15
 
-  break_statement =
-    break_keyword identifier? semi;
+  break_statement {-> break_statement} =
+    break_keyword identifier? semi {-> New break_statement(identifier)};
 
   // 14.16
 
-  continue_statement =
-    continue_keyword identifier? semi;
+  continue_statement {-> continue_statement} =
+    continue_keyword identifier? semi {-> New continue_statement(identifier)};
 
   // 14.17
 
   //return_statement =
   //  return_keyword expression? semi;
 
-  return_statement =
-    {expression} return_keyword expression_no_name? semi |
-    {name} return_keyword name semi;
+  return_statement {-> return_statement} =
+    {expression} return_keyword expression_no_name semi {-> New return_statement.expression(New expression.expression(expression_no_name.expression_no_name))} |
+    {name} return_keyword name semi {-> New return_statement.expression(New expression.name(name.name))} |
+    {void} return_keyword semi {-> New return_statement.void()};
 
   // 14.18
 
   //throw_statement =
   //  throw_keyword expression semi;
 
-  throw_statement =
-    {expression} throw_keyword expression_no_name semi |
-    {name} throw_keyword name semi;
+  throw_statement {-> throw_statement} =
+    {expression} throw_keyword expression_no_name semi {-> New throw_statement(New expression.expression(expression_no_name.expression_no_name))} |
+    {name} throw_keyword name semi {-> New throw_statement(New expression.name(name.name))};
 
   // 14.19
 
   //synchronized_statement =
   //  synchronized_keyword l_par expression r_par block;
 
-  synchronized_statement =
-    {expression} synchronized_keyword l_par expression_no_name r_par block |
-    {name} synchronized_keyword l_par name r_par block;
+  synchronized_statement {-> synchronized_statement} =
+    {expression} synchronized_keyword l_par expression_no_name r_par block {-> New synchronized_statement(New expression.expression(expression_no_name.expression_no_name), block.block)} |
+    {name} synchronized_keyword l_par name r_par block {-> New synchronized_statement(New expression.name(name.name), block.block)};
 
   // 14.20
 
-  try_statement =
-    {catch} try_keyword block catches |
-    {finally} try_keyword block catches? finally |
-    {resources} try_with_resources_statement;
+  try_statement {-> try_statement} =
+    {catch} try_keyword block catches {-> New try_statement.catch(block.block, [catches.catch_clause])} |
+    {finally} try_keyword block catches? finally {-> New try_statement.finally(block.block, [catches.catch_clause], finally.finally)}|
+    {resources} try_with_resources_statement {-> New try_statement.resources(try_with_resources_statement.try_with_resources_statement)};
 
-  catches =
-    {clause} catch_clause |
-    {catches} catches catch_clause;
+  catches {-> catch_clause+} =
+    {clause} catch_clause {-> [catch_clause.catch_clause]} |
+    {catches} catches catch_clause {-> [catches.catch_clause, catch_clause.catch_clause]};
 
-  catch_clause =
-    catch_keyword l_par catch_formal_parameter r_par block;
+  catch_clause {-> catch_clause} =
+    catch_keyword l_par catch_formal_parameter r_par block {-> New catch_clause(catch_formal_parameter.catch_formal_parameter, block.block)};
 
-  catch_formal_parameter =
-    modifiers? catch_type variable_declarator_id;
+  catch_formal_parameter {-> catch_formal_parameter} =
+    modifiers? catch_type variable_declarator_id {-> New catch_formal_parameter([modifiers.modifier], [catch_type.class_type], variable_declarator_id)} ;
 
-  catch_type =
-    {class} class_type |
-    {catch} class_type bar catch_type;
+  catch_type {-> class_type+} =
+    {class} class_type {-> [class_type]} |
+    {catch} class_type bar catch_type {-> [class_type, catch_type.class_type]};
 
-  finally =
-    finally_keyword block;
+  finally {-> finally} =
+    finally_keyword block {-> New finally(block.block)};
 
-  try_with_resources_statement =
-    try_keyword resource_specification block variable_declarator_id catches? finally?;
+  try_with_resources_statement {-> try_with_resources_statement} =
+    try_keyword resource_specification block variable_declarator_id catches? finally? {-> New try_with_resources_statement(resource_specification.resource_specification, block.block, variable_declarator_id, [catches.catch_clause], finally.finally)};
 
-  resource_specification =
-    l_par resources semi? r_par;
+  resource_specification {-> resource_specification} =
+    l_par resources semi? r_par {-> New resource_specification([resources.resource])};
 
   //resources =
   //  {resource} resource |
@@ -1412,22 +1413,22 @@ Productions
 
   // use left recursion, instead of right recursion
 
-  resources =
-    {resource} resource |
-    {resources} resources semi resource;
+  resources {-> resource+} =
+    {resource} resource {-> [resource.resource]} |
+    {resources} resources semi resource {-> [resources.resource, resource.resource]};
 
   //resource =
   //  modifiers? type variable_declarator_id assign expression;
 
-  resource =
-    {expression} modifiers? type variable_declarator_id assign expression_no_name |
-    {name} modifiers? type variable_declarator_id assign name;
+  resource {-> resource} =
+    {expression} modifiers? type variable_declarator_id assign expression_no_name {-> New resource([modifiers.modifier], type, variable_declarator_id, New expression.expression(expression_no_name.expression_no_name))} |
+    {name} modifiers? type variable_declarator_id assign name {-> New resource([modifiers.modifier], type, variable_declarator_id, New expression.name(name.name))};
 
   // 15.8
 
-  primary =
-    {primary} primary_no_new_array |
-    {array} array_creation_expression;
+  primary {-> expression_no_name} =
+    {primary} primary_no_new_array {-> primary_no_new_array.expression_no_name} |
+    {array} array_creation_expression {-> New expression_no_name.array_creation(array_creation_expression.array_creation_expression)};
 
   //primary_no_new_array =
   //  {literal} literal |
@@ -1451,18 +1452,18 @@ Productions
   // the local ambiguity caused by not knowing whether "<" indicates
   // a "less-than" expression or a type argument.
 
-  primary_no_new_array =
-    {literal} literal |
-    {type} type_no_arguments dot class_keyword |
-    {void} void_keyword dot class_keyword |
-    {this} this_keyword |
-    {class} class_name dot this_keyword |
-    {expression} l_par expression_no_name r_par |
-    {expression_name} l_par name r_par |
-    {instance} class_instance_creation_expression |
-    {field} field_access |
-    {method} method_invocation |
-    {array} array_access;
+  primary_no_new_array {-> expression_no_name} =
+    {literal} literal {-> New expression_no_name.literal(literal)} |
+    {type} type_no_arguments dot class_keyword {-> New expression_no_name.type(type_no_arguments)} |
+    {void} void_keyword dot class_keyword {-> New expression_no_name.void()} |
+    {this} this_keyword {-> New expression_no_name.this()} |
+    {class} class_name dot this_keyword {-> New expression_no_name.class(class_name)} |
+    {expression} l_par expression_no_name r_par {-> New expression_no_name.expression(New expression.expression(expression_no_name.expression_no_name))} |
+    {expression_name} l_par name r_par {-> New expression_no_name.expression(New expression.name(name.name))} |
+    {instance} class_instance_creation_expression {-> New expression_no_name.instance(class_instance_creation_expression.class_instance_creation_expression)} |
+    {field} field_access {-> New expression_no_name.field(field_access)} |
+    {method} method_invocation {-> New expression_no_name.method(method_invocation)} |
+    {array} array_access {-> New expression_no_name.array(array_access)};
 
   // Missing from JLS
 
@@ -1471,67 +1472,67 @@ Productions
 
   // 15.9
 
-  class_instance_creation_expression =
-    {new} new_keyword type_arguments? type_decl_specifier type_arguments_or_diamond? l_par argument_list? r_par class_body? |
-    {primary} primary dot new_keyword type_arguments? identifier type_arguments_or_diamond? l_par argument_list? r_par class_body?;
+  class_instance_creation_expression {-> class_instance_creation_expression} =
+    {new} new_keyword type_arguments? type_decl_specifier type_arguments_or_diamond? l_par argument_list? r_par class_body? {-> New class_instance_creation_expression.new(type_arguments, type_decl_specifier, type_arguments_or_diamond, [argument_list.argument], class_body.class_body)} |
+    {primary} primary dot new_keyword type_arguments? identifier type_arguments_or_diamond? l_par argument_list? r_par class_body? {-> New class_instance_creation_expression.primary(primary.expression_no_name, type_arguments, identifier, type_arguments_or_diamond, [argument_list.argument], class_body.class_body)};
 
-  type_arguments_or_diamond =
-    {type_arguments} type_arguments |
-    {diamond} lt gt;
+  type_arguments_or_diamond {-> type_arguments_or_diamond} =
+    {type_arguments} type_arguments {-> New type_arguments_or_diamond.type_arguments(type_arguments)} |
+    {diamond} lt gt {-> New type_arguments_or_diamond.diamond()};
 
   //argument_list =
   //  {expression} expression |
   //  {list} argument_list comma expression;
 
-  argument_list =
-    {expression} expression_no_name argument_list_tail* |
-    {name} name argument_list_tail*;
+  argument_list {-> argument*} =
+    {expression} expression_no_name argument_list_tail* {-> [New argument.expression(expression_no_name), argument_list_tail.argument]}|
+    {name} name argument_list_tail* {-> [New argument.name(name), argument_list_tail.argument]};
 
-  argument_list_tail =
-    {expression} comma expression_no_name |
-    {name} comma name;
+  argument_list_tail {-> argument} =
+    {expression} comma expression_no_name {-> New argument.expression(expression_no_name)}|
+    {name} comma name {-> New argument.name(name)};
 
   // 15.10
 
-  array_creation_expression =
-    {primitive} new_keyword primitive_type dim_exprs dim* |
-    {class} new_keyword class_or_interface_type dim_exprs dim* |
-    {primitive_initializer} new_keyword primitive_type dim+ array_initializer |
-    {class_initializer} new_keyword class_or_interface_type dim+ array_initializer;
+  array_creation_expression {-> array_creation_expression} =
+    {primitive} new_keyword primitive_type dim_exprs dim* {-> New array_creation_expression.primitive(primitive_type, [dim_exprs.dim_expr], [dim])} |
+    {class} new_keyword class_or_interface_type dim_exprs dim* {-> New array_creation_expression.class(class_or_interface_type, [dim_exprs.dim_expr], [dim])} |
+    {primitive_initializer} new_keyword primitive_type dim+ array_initializer {-> New array_creation_expression.primitive_initializer(primitive_type, [dim], array_initializer)} |
+    {class_initializer} new_keyword class_or_interface_type dim+ array_initializer {-> New array_creation_expression.class_initializer(class_or_interface_type, [dim], array_initializer)};
 
-  dim_exprs =
-    {expr} dim_expr |
-    {exprs} dim_exprs dim_expr;
+  dim_exprs {-> dim_expr+} =
+    {expr} dim_expr {-> [dim_expr.dim_expr]} |
+    {exprs} dim_exprs dim_expr {-> [dim_exprs.dim_expr, dim_expr.dim_expr]};
 
   //dim_expr =
   //  l_bkt expression r_bkt;
 
-  dim_expr =
-    {expression} l_bkt expression_no_name r_bkt |
-    {name} l_bkt name r_bkt;
+  dim_expr {-> dim_expr} =
+    {expression} l_bkt expression_no_name r_bkt {-> New dim_expr(New expression.expression(expression_no_name.expression_no_name))} |
+    {name} l_bkt name r_bkt {-> New dim_expr(New expression.name(name.name))};
 
   //dims =
   //  {dim} l_bkt r_bkt |
   //  {dims} dims l_bkt r_bkt;
 
-  dim =
-    l_bkt r_bkt;
+  dim {-> dim}=
+    l_bkt r_bkt {-> New dim()};
 
   // 15.11
 
-  field_access =
-    {primary} primary dot identifier |
-    {super} super_keyword dot identifier |
-    {class} class_name [dot1]:dot super_keyword [dot2]:dot identifier;
+  field_access {-> field_access} =
+    {primary} primary dot identifier {-> New field_access.primary(primary.expression_no_name, identifier)} |
+    {super} super_keyword dot identifier {-> New field_access.super(identifier)} |
+    {class} class_name [dot1]:dot super_keyword [dot2]:dot identifier {-> New field_access.class(class_name, identifier)};
 
   // 15.12
 
-  method_invocation =
-    {method} name l_par argument_list? r_par |
-    {primary} primary dot non_wild_type_arguments? identifier l_par argument_list? r_par |
-    {super} super_keyword dot non_wild_type_arguments? identifier l_par argument_list? r_par |
-    {class} class_name [dot1]:dot super_keyword [dot2]:dot non_wild_type_arguments? identifier l_par argument_list? r_par |
-    {type} name dot non_wild_type_arguments identifier l_par argument_list? r_par;
+  method_invocation {-> method_invocation} =
+    {method} name l_par argument_list? r_par {-> New method_invocation.method(name.name, [argument_list.argument])} |
+    {primary} primary dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.primary(primary.expression_no_name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
+    {super} super_keyword dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.super([non_wild_type_arguments.reference_type], identifier, [argument_list.argument])}|
+    {class} class_name [dot1]:dot super_keyword [dot2]:dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.class(class_name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
+    {type} name dot non_wild_type_arguments identifier l_par argument_list? r_par {-> New method_invocation.type(name.name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])};
 
   // 15.13
 
@@ -1539,11 +1540,11 @@ Productions
   //  {expression} name l_bkt expression r_bkt |
   //  {primary} primary_no_new_array l_bkt expression r_bkt;
 
-  array_access =
-    {expression} name l_bkt expression_no_name r_bkt |
-    {expression_name} [name1]:name l_bkt [name2]:name r_bkt |
-    {primary} primary_no_new_array l_bkt expression_no_name r_bkt |
-    {primary_name} primary_no_new_array l_bkt name r_bkt;
+  array_access {-> array_access} =
+    {expression} name l_bkt expression_no_name r_bkt {-> New array_access(New expression.name(name.name), New expression.expression(expression_no_name.expression_no_name))} |
+    {expression_name} [name1]:name l_bkt [name2]:name r_bkt {-> New array_access(New expression.name(name1.name), New expression.name(name2.name))} |
+    {primary} primary_no_new_array l_bkt expression_no_name r_bkt {-> New array_access(New expression.expression(primary_no_new_array.expression_no_name), New expression.expression(expression_no_name.expression_no_name))} |
+    {primary_name} primary_no_new_array l_bkt name r_bkt {-> New array_access(New expression.expression(primary_no_new_array.expression_no_name), New expression.name(name.name))};
 
   // 15.14
 
@@ -1553,24 +1554,24 @@ Productions
   //  {increment} post_increment_expression |
   //  {decrement} post_decrement_expression;
 
-  postfix_expression_no_name =
-    {primary} primary |
-    {increment} post_increment_expression |
-    {decrement} post_decrement_expression;
+  postfix_expression_no_name {-> expression_no_name} =
+    {primary} primary {-> primary.expression_no_name} |
+    {increment} post_increment_expression {-> post_increment_expression.expression_no_name} |
+    {decrement} post_decrement_expression {-> post_decrement_expression.expression_no_name};
 
   //post_increment_expression =
   //  postfix_expression plus_plus;
 
-  post_increment_expression =
-    {postfix} postfix_expression_no_name plus_plus |
-    {name} name plus_plus;
+  post_increment_expression {-> expression_no_name} =
+    {postfix} postfix_expression_no_name plus_plus {-> New expression_no_name.post_inc(New expression.expression(postfix_expression_no_name.expression_no_name))} |
+    {name} name plus_plus {-> New expression_no_name.post_inc(New expression.name(name.name))};
 
   //post_decrement_expression =
   //  postfix_expression minus_minus;
 
-  post_decrement_expression =
-    {postfix} postfix_expression_no_name minus_minus |
-    {name} name minus_minus;
+  post_decrement_expression {-> expression_no_name} =
+    {postfix} postfix_expression_no_name minus_minus {-> New expression_no_name.post_decr(New expression.expression(postfix_expression_no_name.expression_no_name))} |
+    {name} name minus_minus {-> New expression_no_name.post_decr(New expression.name(name.name))};
 
   // 15.15
 
@@ -1581,28 +1582,28 @@ Productions
   // {minus} minus unary_expression |
   // {unary} unary_expression_not_plus_minus;
 
-  unary_expression_no_name =
-   {increment} pre_increment_expression |
-   {decrement} pre_decrement_expression |
-   {plus} plus unary_expression_no_name |
-   {plus_name} plus name |
-   {minus} minus unary_expression_no_name |
-   {minus_name} minus name |
-   {unary} unary_expression_not_plus_minus_no_name;
+  unary_expression_no_name {-> expression_no_name} =
+   {increment} pre_increment_expression {-> pre_increment_expression.expression_no_name} |
+   {decrement} pre_decrement_expression {-> pre_decrement_expression.expression_no_name} |
+   {plus} plus unary_expression_no_name {-> New expression_no_name.uplus(New expression.expression(unary_expression_no_name.expression_no_name))} |
+   {plus_name} plus name {-> New expression_no_name.uplus(New expression.name(name.name))} |
+   {minus} minus unary_expression_no_name {-> New expression_no_name.uminus(New expression.expression(unary_expression_no_name.expression_no_name))} |
+   {minus_name} minus name {-> New expression_no_name.uminus(New expression.name(name.name))} |
+   {unary} unary_expression_not_plus_minus_no_name {-> unary_expression_not_plus_minus_no_name.expression_no_name};
 
   //pre_increment_expression =
   //  plus_plus unary_expression;
 
-  pre_increment_expression =
-    {unary} plus_plus unary_expression_no_name |
-    {name} plus_plus name;
+  pre_increment_expression {-> expression_no_name} =
+    {unary} plus_plus unary_expression_no_name {-> New expression_no_name.pre_inc(New expression.expression(unary_expression_no_name.expression_no_name))} |
+    {name} plus_plus name {-> New expression_no_name.pre_inc(New expression.name(name.name))};
 
   //pre_decrement_expression =
   //  minus_minus unary_expression;
 
-  pre_decrement_expression =
-    {unary} minus_minus unary_expression_no_name |
-    {name} minus_minus name;
+  pre_decrement_expression {-> expression_no_name} =
+    {unary} minus_minus unary_expression_no_name {-> New expression_no_name.pre_decr(New expression.expression(unary_expression_no_name.expression_no_name))}|
+    {name} minus_minus name {-> New expression_no_name.pre_decr(New expression.name(name.name))};
 
   //unary_expression_not_plus_minus =
   //  {postfix} postfix_expression |
@@ -1610,13 +1611,13 @@ Productions
   //  {emark} emark unary_expression |
   //  {cast} cast_expression;
 
-  unary_expression_not_plus_minus_no_name =
-    {postfix} postfix_expression_no_name |
-    {tilde} tilde unary_expression_no_name |
-    {tilde_name} tilde name |
-    {emark} emark unary_expression_no_name |
-    {emark_name} emark name |
-    {cast} cast_expression;
+  unary_expression_not_plus_minus_no_name {-> expression_no_name} =
+    {postfix} postfix_expression_no_name {-> postfix_expression_no_name.expression_no_name} |
+    {tilde} tilde unary_expression_no_name {-> New expression_no_name.tilde(New expression.expression(unary_expression_no_name.expression_no_name))} |
+    {tilde_name} tilde name {-> New expression_no_name.tilde(New expression.name(name.name))} |
+    {emark} emark unary_expression_no_name {-> New expression_no_name.emark(New expression.expression(unary_expression_no_name.expression_no_name))} |
+    {emark_name} emark name {-> New expression_no_name.emark(New expression.name(name.name))} |
+    {cast} cast_expression {-> cast_expression.expression_no_name};
 
   // 15.16
 
@@ -1624,11 +1625,11 @@ Productions
   //  {primitive} l_par primitive_type r_par unary_expression |
   //  {reference} l_par reference_type r_par unary_expression_not_plus_minus;
 
-  cast_expression =
-    {primitive} l_par primitive_type r_par unary_expression_no_name |
-    {primitive_name} l_par primitive_type r_par name |
-    {reference} l_par reference_type r_par unary_expression_not_plus_minus_no_name |
-    {reference_name} l_par reference_type r_par name;
+  cast_expression {->  expression_no_name} =
+    {primitive} l_par primitive_type r_par unary_expression_no_name {-> New expression_no_name.pcast(primitive_type, New expression.expression(unary_expression_no_name.expression_no_name))} |
+    {primitive_name} l_par primitive_type r_par name {-> New expression_no_name.pcast(primitive_type, New expression.name(name.name))} |
+    {reference} l_par reference_type r_par unary_expression_not_plus_minus_no_name {-> New expression_no_name.rcast(reference_type, New expression.expression(unary_expression_not_plus_minus_no_name.expression_no_name))} |
+    {reference_name} l_par reference_type r_par name {-> New expression_no_name.rcast(reference_type, New expression.name(name.name))};
 
   // 15.17
 
@@ -1638,20 +1639,20 @@ Productions
   //  {slash} multiplicative_expression slash unary_expression |
   //  {percent} multiplicative_expression percent unary_expression;
 
-  multiplicative_expression_no_name =
-    {unary} unary_expression_no_name |
-    {star} multiplicative_expression_no_name star unary_expression_no_name |
-    {star_name} multiplicative_expression_no_name star name |
-    {name_star} name star unary_expression_no_name |
-    {name_star_name} [name1]:name star [name2]:name |
-    {slash} multiplicative_expression_no_name slash unary_expression_no_name |
-    {slash_name} multiplicative_expression_no_name slash name |
-    {name_slash} name slash unary_expression_no_name |
-    {name_slash_name} [name1]:name slash [name2]:name |
-    {percent} multiplicative_expression_no_name percent unary_expression_no_name |
-    {percent_name} multiplicative_expression_no_name percent name |
-    {name_percent} name percent unary_expression_no_name |
-    {name_percent_name} [name1]:name percent [name2]:name;
+  multiplicative_expression_no_name {-> expression_no_name} =
+    {unary} unary_expression_no_name {-> unary_expression_no_name.expression_no_name} |
+    {star} [left]:multiplicative_expression_no_name star [right]:unary_expression_no_name {-> New expression_no_name.mul(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {star_name} [left]:multiplicative_expression_no_name star [right]:name {-> New expression_no_name.mul(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_star} [left]:name star [right]:unary_expression_no_name {-> New expression_no_name.mul(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_star_name} [left]:name star [right]:name {-> New expression_no_name.mul(New expression.name(left.name), New expression.name(right.name))} |
+    {slash} [left]:multiplicative_expression_no_name slash [right]:unary_expression_no_name {-> New expression_no_name.div(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {slash_name} [left]:multiplicative_expression_no_name slash [right]:name {-> New expression_no_name.div(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_slash} [left]:name slash [right]:unary_expression_no_name {-> New expression_no_name.div(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_slash_name} [left]:name slash [right]:name {-> New expression_no_name.div(New expression.name(left.name), New expression.name(right.name))} |
+    {percent} [left]:multiplicative_expression_no_name percent [right]:unary_expression_no_name {-> New expression_no_name.mod(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {percent_name} [left]:multiplicative_expression_no_name percent [right]:name {-> New expression_no_name.mod(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_percent} [left]:name percent [right]:unary_expression_no_name {-> New expression_no_name.mod(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_percent_name} [left]:name percent [right]:name {-> New expression_no_name.mod(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.18
 
@@ -1660,16 +1661,16 @@ Productions
   //  {plus} additive_expression plus multiplicative_expression |
   //  {minus} additive_expression minus multiplicative_expression;
 
-  additive_expression_no_name =
-    {multiplicative} multiplicative_expression_no_name |
-    {plus} additive_expression_no_name plus multiplicative_expression_no_name |
-    {plus_name} additive_expression_no_name plus name |
-    {name_plus} name plus multiplicative_expression_no_name |
-    {name_plus_name} [name1]:name plus [name2]:name |
-    {minus} additive_expression_no_name minus multiplicative_expression_no_name |
-    {minus_name} additive_expression_no_name minus name |
-    {name_minus} name minus multiplicative_expression_no_name |
-    {name_minus_name} [name1]:name minus [name2]:name;
+  additive_expression_no_name {-> expression_no_name} =
+    {multiplicative} multiplicative_expression_no_name {-> multiplicative_expression_no_name.expression_no_name} |
+    {plus} [left]:additive_expression_no_name plus [right]:multiplicative_expression_no_name {-> New expression_no_name.plus(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {plus_name} [left]:additive_expression_no_name plus [right]:name {-> New expression_no_name.plus(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_plus} [left]:name plus [right]:multiplicative_expression_no_name {-> New expression_no_name.plus(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_plus_name} [left]:name plus [right]:name {-> New expression_no_name.plus(New expression.name(left.name), New expression.name(right.name))} |
+    {minus} [left]:additive_expression_no_name minus [right]:multiplicative_expression_no_name {-> New expression_no_name.minus(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {minus_name} [left]:additive_expression_no_name minus [right]:name {-> New expression_no_name.minus(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_minus} [left]:name minus [right]:multiplicative_expression_no_name {-> New expression_no_name.minus(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_minus_name} [left]:name minus [right]:name {-> New expression_no_name.minus(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.19
 
@@ -1679,20 +1680,20 @@ Productions
   //  {shr} shift_expression shr additive_expression |
   //  {ushr} shift_expression ushr additive_expression;
 
-  shift_expression_no_name =
-    {additive} additive_expression_no_name |
-    {shl} shift_expression_no_name shl additive_expression_no_name |
-    {shl_name} shift_expression_no_name shl name |
-    {name_shl} name shl additive_expression_no_name |
-    {name_shl_name} [name1]:name shl [name2]:name |
-    {shr} shift_expression_no_name shr additive_expression_no_name |
-    {shr_name} shift_expression_no_name shr name |
-    {name_shr} name shr additive_expression_no_name |
-    {name_shr_name} [name1]:name shr [name2]:name |
-    {ushr} shift_expression_no_name ushr additive_expression_no_name |
-    {ushr_name} shift_expression_no_name ushr name |
-    {name_ushr} name ushr additive_expression_no_name |
-    {name_ushr_name} [name1]:name ushr [name2]:name;
+  shift_expression_no_name {-> expression_no_name} =
+    {additive} additive_expression_no_name {-> additive_expression_no_name.expression_no_name} |
+    {shl} [left]:shift_expression_no_name shl [right]:additive_expression_no_name {-> New expression_no_name.shl(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {shl_name} [left]:shift_expression_no_name shl [right]:name {-> New expression_no_name.shl(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_shl} [left]:name shl [right]:additive_expression_no_name {-> New expression_no_name.shl(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_shl_name} [left]:name shl [right]:name {-> New expression_no_name.shl(New expression.name(left.name), New expression.name(right.name))} |
+    {shr} [left]:shift_expression_no_name shr [right]:additive_expression_no_name {-> New expression_no_name.shr(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {shr_name} [left]:shift_expression_no_name shr [right]:name {-> New expression_no_name.shr(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_shr} [left]:name shr [right]:additive_expression_no_name {-> New expression_no_name.shr(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_shr_name} [left]:name shr [right]:name {-> New expression_no_name.shr(New expression.name(left.name), New expression.name(right.name))} |
+    {ushr} [left]:shift_expression_no_name ushr [right]:additive_expression_no_name {-> New expression_no_name.ushr(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {ushr_name} [left]:shift_expression_no_name ushr [right]:name {-> New expression_no_name.ushr(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_ushr} [left]:name ushr [right]:additive_expression_no_name {-> New expression_no_name.ushr(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_ushr_name} [left]:name ushr [right]:name {-> New expression_no_name.ushr(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.20
 
@@ -1710,32 +1711,32 @@ Productions
   // instanceof is a boolean, so we assume the "<" is the start of a
   // type parameter, not the "less than" operator.
 
-  relational_expression_no_name =
-    {no_instanceof} relational_expression_no_name_no_instanceof |
-    {instanceof} relational_expression_no_name instanceof_keyword reference_type |
-    {name_instanceof} name instanceof_keyword reference_type;
+  relational_expression_no_name {-> expression_no_name} =
+    {no_instanceof} relational_expression_no_name_no_instanceof {-> relational_expression_no_name_no_instanceof.expression_no_name} |
+    {instanceof} [left]:relational_expression_no_name instanceof_keyword [right]:reference_type {-> New expression_no_name.instanceof(New expression.expression(left.expression_no_name), right)} |
+    {name_instanceof} [left]:name instanceof_keyword [right]:reference_type {-> New expression_no_name.instanceof(New expression.name(left.name), right)} ;
 
   // WARNING: the production was rewritten as right associative
   // to eliminate conflicts.
 
-  relational_expression_no_name_no_instanceof =
-    {shift} shift_expression_no_name |
-    {lt} shift_expression_no_name lt relational_expression_no_name_no_instanceof |
-    {lt_name} shift_expression_no_name lt name |
-    {name_lt} name lt relational_expression_no_name_no_instanceof |
-    {name_lt_name} [name1]:name lt [name2]:name |
-    {gt} shift_expression_no_name gt relational_expression_no_name_no_instanceof |
-    {gt_name} shift_expression_no_name gt name |
-    {name_gt} name gt relational_expression_no_name_no_instanceof |
-    {name_gt_name} [name1]:name gt [name2]:name |
-    {lteq} shift_expression_no_name lteq relational_expression_no_name_no_instanceof |
-    {lteq_name} shift_expression_no_name lteq name |
-    {name_lteq} name lteq relational_expression_no_name_no_instanceof |
-    {name_lteq_name} [name1]:name lteq [name2]:name |
-    {gteq} shift_expression_no_name gteq relational_expression_no_name_no_instanceof |
-    {gteq_name} shift_expression_no_name gteq name |
-    {name_gteq} name gteq relational_expression_no_name_no_instanceof |
-    {name_gteq_name} [name1]:name gteq [name2]:name;
+  relational_expression_no_name_no_instanceof {-> expression_no_name} =
+    {shift} shift_expression_no_name {-> shift_expression_no_name.expression_no_name} |
+    {lt} [left]:shift_expression_no_name lt [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.lt(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {lt_name} [left]:shift_expression_no_name lt [right]:name {-> New expression_no_name.lt(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_lt} [left]:name lt [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.lt(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_lt_name} [left]:name lt [right]:name {-> New expression_no_name.lt(New expression.name(left.name), New expression.name(right.name))} |
+    {gt} [left]:shift_expression_no_name gt [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.gt(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {gt_name} [left]:shift_expression_no_name gt [right]:name {-> New expression_no_name.gt(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_gt} [left]:name gt [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.gt(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_gt_name} [left]:name gt [right]:name {-> New expression_no_name.gt(New expression.name(left.name), New expression.name(right.name))} |
+    {lteq} [left]:shift_expression_no_name lteq [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.lteq(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {lteq_name} [left]:shift_expression_no_name lteq [right]:name {-> New expression_no_name.lteq(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_lteq} [left]:name lteq [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.lteq(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_lteq_name} [left]:name lteq [right]:name {-> New expression_no_name.lteq(New expression.name(left.name), New expression.name(right.name))} |
+    {gteq} [left]:shift_expression_no_name gteq [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.gteq(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {gteq_name} [left]:shift_expression_no_name gteq [right]:name {-> New expression_no_name.gteq(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_gteq} [left]:name gteq [right]:relational_expression_no_name_no_instanceof {-> New expression_no_name.gteq(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_gteq_name} [left]:name gteq [right]:name {-> New expression_no_name.gteq(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.21
 
@@ -1744,16 +1745,16 @@ Productions
   //  {eq} equality_expression eq relational_expression |
   //  {neq} equality_expression neq relational_expression;
 
-  equality_expression_no_name =
-    {relational} relational_expression_no_name |
-    {eq} equality_expression_no_name eq relational_expression_no_name |
-    {eq_name} equality_expression_no_name eq name |
-    {name_eq} name eq relational_expression_no_name |
-    {name_eq_name} [name1]:name eq [name2]:name |
-    {neq} equality_expression_no_name neq relational_expression_no_name |
-    {neq_name} equality_expression_no_name neq name |
-    {name_neq} name neq relational_expression_no_name |
-    {name_neq_name} [name1]:name neq [name2]:name;
+  equality_expression_no_name {-> expression_no_name} =
+    {relational} relational_expression_no_name {-> relational_expression_no_name.expression_no_name} |
+    {eq} [left]:equality_expression_no_name eq [right]:relational_expression_no_name {-> New expression_no_name.eq(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {eq_name} [left]:equality_expression_no_name eq [right]:name {-> New expression_no_name.eq(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_eq} [left]:name eq [right]:relational_expression_no_name {-> New expression_no_name.eq(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_eq_name} [left]:name eq [right]:name {-> New expression_no_name.eq(New expression.name(left.name), New expression.name(right.name))} |
+    {neq} [left]:equality_expression_no_name neq [right]:relational_expression_no_name {-> New expression_no_name.neq(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {neq_name} [left]:equality_expression_no_name neq [right]:name {-> New expression_no_name.neq(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_neq} [left]:name neq [right]:relational_expression_no_name {-> New expression_no_name.neq(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_neq_name} [left]:name neq [right]:name {-> New expression_no_name.neq(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.22
 
@@ -1761,34 +1762,34 @@ Productions
   //  {equality} equality_expression |
   //  {amp} and_expression amp equality_expression;
 
-  and_expression_no_name =
-    {equality} equality_expression_no_name |
-    {amp} and_expression_no_name amp equality_expression_no_name |
-    {amp_name} and_expression_no_name amp name |
-    {name_amp} name amp equality_expression_no_name |
-    {name_amp_name} [name1]:name amp [name2]:name;
+  and_expression_no_name {-> expression_no_name} =
+    {equality} equality_expression_no_name {-> equality_expression_no_name.expression_no_name} |
+    {amp} [left]:and_expression_no_name amp [right]:equality_expression_no_name {-> New expression_no_name.and(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {amp_name} [left]:and_expression_no_name amp [right]:name {-> New expression_no_name.and(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_amp} [left]:name amp [right]:equality_expression_no_name {-> New expression_no_name.and(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_amp_name} [left]:name amp [right]:name {-> New expression_no_name.and(New expression.name(left.name), New expression.name(right.name))};
 
   //exclusive_or_expression =
   //  {and} and_expression |
   //  {caret} exclusive_or_expression caret and_expression;
 
-  exclusive_or_expression_no_name =
-    {and} and_expression_no_name |
-    {caret} exclusive_or_expression_no_name caret and_expression_no_name |
-    {caret_name} exclusive_or_expression_no_name caret name |
-    {name_caret} name caret and_expression_no_name |
-    {name_caret_name} [name1]:name caret [name2]:name;
+  exclusive_or_expression_no_name {-> expression_no_name} =
+    {and} and_expression_no_name {-> and_expression_no_name.expression_no_name} |
+    {caret} [left]:exclusive_or_expression_no_name caret [right]:and_expression_no_name {-> New expression_no_name.eor(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {caret_name} [left]:exclusive_or_expression_no_name caret [right]:name {-> New expression_no_name.eor(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_caret} [left]:name caret [right]:and_expression_no_name {-> New expression_no_name.eor(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_caret_name} [left]:name caret [right]:name {-> New expression_no_name.eor(New expression.name(left.name), New expression.name(right.name))};
 
   //inclusive_or_expression =
   //  {or} exclusive_or_expression |
   //  {bar} inclusive_or_expression bar exclusive_or_expression;
 
-  inclusive_or_expression_no_name =
-    {or} exclusive_or_expression_no_name |
-    {bar} inclusive_or_expression_no_name bar exclusive_or_expression_no_name |
-    {bar_name} inclusive_or_expression_no_name bar name |
-    {name_bar} name bar exclusive_or_expression_no_name |
-    {name_bar_name} [name1]:name bar [name2]:name;
+  inclusive_or_expression_no_name {-> expression_no_name} =
+    {or} exclusive_or_expression_no_name {-> exclusive_or_expression_no_name.expression_no_name} |
+    {bar} [left]:inclusive_or_expression_no_name bar [right]:exclusive_or_expression_no_name {-> New expression_no_name.ior(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {bar_name} [left]:inclusive_or_expression_no_name bar [right]:name {-> New expression_no_name.ior(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_bar} [left]:name bar [right]:exclusive_or_expression_no_name {-> New expression_no_name.ior(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_bar_name} [left]:name bar [right]:name {-> New expression_no_name.ior(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.23
 
@@ -1796,12 +1797,12 @@ Productions
   //  {or} inclusive_or_expression |
   //  {amp} conditional_and_expression amp_amp inclusive_or_expression;
 
-  conditional_and_expression_no_name =
-    {or} inclusive_or_expression_no_name |
-    {amp} conditional_and_expression_no_name amp_amp inclusive_or_expression_no_name |
-    {amp_name} conditional_and_expression_no_name amp_amp name |
-    {name_amp} name amp_amp inclusive_or_expression_no_name |
-    {name_amp_name} [name1]:name amp_amp [name2]:name;
+  conditional_and_expression_no_name {-> expression_no_name} =
+    {or} inclusive_or_expression_no_name {-> inclusive_or_expression_no_name.expression_no_name} |
+    {amp} [left]:conditional_and_expression_no_name amp_amp [right]:inclusive_or_expression_no_name {-> New expression_no_name.cand(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {amp_name} [left]:conditional_and_expression_no_name amp_amp [right]:name {-> New expression_no_name.cand(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_amp} [left]:name amp_amp [right]:inclusive_or_expression_no_name {-> New expression_no_name.cand(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_amp_name} [left]:name amp_amp [right]:name {-> New expression_no_name.cand(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.24
 
@@ -1809,12 +1810,12 @@ Productions
   //  {and} conditional_and_expression |
   //  {bar} conditional_or_expression bar_bar conditional_and_expression;
 
-  conditional_or_expression_no_name =
-    {and} conditional_and_expression_no_name |
-    {bar} conditional_or_expression_no_name bar_bar conditional_and_expression_no_name |
-    {bar_name} conditional_or_expression_no_name bar_bar name |
-    {name_bar} name bar_bar conditional_and_expression_no_name |
-    {name_bar_name} [name1]:name bar_bar [name2]:name;
+  conditional_or_expression_no_name {-> expression_no_name} =
+    {and} conditional_and_expression_no_name {-> conditional_and_expression_no_name.expression_no_name} |
+    {bar} [left]:conditional_or_expression_no_name bar_bar [right]:conditional_and_expression_no_name {-> New expression_no_name.cor(New expression.expression(left.expression_no_name), New expression.expression(right.expression_no_name))} |
+    {bar_name} [left]:conditional_or_expression_no_name bar_bar [right]:name {-> New expression_no_name.cor(New expression.expression(left.expression_no_name), New expression.name(right.name))} |
+    {name_bar} [left]:name bar_bar [right]:conditional_and_expression_no_name {-> New expression_no_name.cor(New expression.name(left.name), New expression.expression(right.expression_no_name))} |
+    {name_bar_name} [left]:name bar_bar [right]:name {-> New expression_no_name.cor(New expression.name(left.name), New expression.name(right.name))};
 
   // 15.25
 
@@ -1822,16 +1823,16 @@ Productions
   //  {or} conditional_or_expression |
   //  {qmark} conditional_or_expression qmark expression colon conditional_expression;
 
-  conditional_expression_no_name =
-    {or} conditional_or_expression_no_name |
-    {qmark_colon} conditional_or_expression_no_name qmark expression_no_name colon conditional_expression_no_name |
-    {qmark_name_colon} conditional_or_expression_no_name qmark name colon conditional_expression_no_name |
-    {qmark_colon_name} conditional_or_expression_no_name qmark expression_no_name colon name |
-    {qmark_name_colon_name} conditional_or_expression_no_name qmark [name1]:name colon [name2]:name |
-    {name_qmark_colon} name qmark expression_no_name colon conditional_expression_no_name |
-    {name_qmark_name_colon} [name1]:name qmark [name2]:name colon conditional_expression_no_name |
-    {name_qmark_colon_name} [name1]:name qmark expression_no_name colon [name2]:name |
-    {name_qmark_name_colon_name} [name1]:name qmark [name2]:name colon [name3]:name;
+  conditional_expression_no_name {-> expression_no_name} =
+    {or} conditional_or_expression_no_name {-> conditional_or_expression_no_name.expression_no_name} |
+    {qmark_colon} [cond]:conditional_or_expression_no_name qmark [true]:expression_no_name colon [false]:conditional_expression_no_name {-> New expression_no_name.qmark(New expression.expression(cond.expression_no_name), New expression.expression(true.expression_no_name), New expression.expression(false.expression_no_name))} |
+    {qmark_name_colon} [cond]:conditional_or_expression_no_name qmark [true]:name colon [false]:conditional_expression_no_name {-> New expression_no_name.qmark(New expression.expression(cond.expression_no_name), New expression.name(true.name), New expression.expression(false.expression_no_name))} |
+    {qmark_colon_name} [cond]:conditional_or_expression_no_name qmark [true]:expression_no_name colon [false]:name {-> New expression_no_name.qmark(New expression.expression(cond.expression_no_name), New expression.expression(true.expression_no_name), New expression.name(false.name))} |
+    {qmark_name_colon_name} [cond]:conditional_or_expression_no_name qmark [true]:name colon [false]:name {-> New expression_no_name.qmark(New expression.expression(cond.expression_no_name), New expression.name(true.name), New expression.name(false.name))} |
+    {name_qmark_colon} [cond]:name qmark [true]:expression_no_name colon [false]:conditional_expression_no_name {-> New expression_no_name.qmark(New expression.name(cond.name), New expression.expression(true.expression_no_name), New expression.expression(false.expression_no_name))} |
+    {name_qmark_name_colon} [cond]:name qmark [true]:name colon [false]:conditional_expression_no_name {-> New expression_no_name.qmark(New expression.name(cond.name), New expression.name(true.name), New expression.expression(false.expression_no_name))} |
+    {name_qmark_colon_name} [cond]:name qmark [true]:expression_no_name colon [false]:name {-> New expression_no_name.qmark(New expression.name(cond.name), New expression.expression(true.expression_no_name), New expression.name(false.name))} |
+    {name_qmark_name_colon_name} [cond]:name qmark [true]:name colon [false]:name {-> New expression_no_name.qmark(New expression.name(cond.name), New expression.name(true.name), New expression.name(false.name))};
 
   // 15.26
 
@@ -1839,16 +1840,16 @@ Productions
   //  {expression} conditional_expression |
   //  {assignment} assignment;
 
-  assignment_expression_no_name =
-    {expression} conditional_expression_no_name |
-    {assignment} assignment;
+  assignment_expression_no_name {-> expression_no_name} =
+    {expression} conditional_expression_no_name {-> conditional_expression_no_name.expression_no_name} |
+    {assignment} assignment {-> assignment.expression_no_name};
 
   //assignment =
   //  left_hand_side assignment_operator assignment_expression;
 
-  assignment =
-    {assignment} left_hand_side assignment_operator assignment_expression_no_name |
-    {name} left_hand_side assignment_operator name;
+  assignment {-> expression_no_name} =
+    {assignment} left_hand_side assignment_operator assignment_expression_no_name {-> New expression_no_name.assignment(left_hand_side, assignment_operator, New expression.expression(assignment_expression_no_name.expression_no_name))} |
+    {name} left_hand_side assignment_operator name {-> New expression_no_name.assignment(left_hand_side, assignment_operator, New expression.name(name.name))};
 
   left_hand_side =
     {expression} name |
@@ -1874,8 +1875,8 @@ Productions
   //expression =
   //  assignment_expression;
 
-  expression_no_name =
-    assignment_expression_no_name;
+  expression_no_name {-> expression_no_name} =
+    assignment_expression_no_name {-> assignment_expression_no_name.expression_no_name};
 
   // 15.28
 
@@ -1887,55 +1888,55 @@ Productions
 
   // Kola Stuff
 
-  port_declaration = 
-    modifiers? port_keyword identifier port_body;
+  port_declaration {-> port_declaration} = 
+    modifiers? port_keyword identifier port_body {-> New port_declaration([modifiers.modifier], identifier, port_body.port_body)};
 
-  event_declaration =
-    modifiers? event_keyword identifier type_parameters? header_fields? super? interfaces? class_body;
+  event_declaration {-> event_declaration} =
+    modifiers? event_keyword identifier type_parameters? header_fields? super? interfaces? class_body {-> New event_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], header_fields, [interfaces.interface_type], class_body.class_body)};
 
-  component_declaration =
-    modifiers? component_keyword definition_keyword identifier type_parameters? component_body;
+  component_declaration {-> component_declaration} =
+    modifiers? component_keyword definition_keyword identifier type_parameters? component_body {-> New component_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], component_body.component_body)};
 
-  port_body = 
-    l_brc port_body_declarations? r_brc;
+  port_body {-> port_body} = 
+    l_brc port_body_declarations? r_brc {-> New port_body([port_body_declarations.port_body_declaration])};
 
-  port_body_declarations = 
-    {declaration} port_body_declaration |
-    {declarations} port_body_declarations port_body_declaration;
+  port_body_declarations {-> port_body_declaration*}= 
+    {declaration} port_body_declaration {-> [port_body_declaration]}|
+    {declarations} port_body_declarations port_body_declaration {-> [port_body_declarations.port_body_declaration, port_body_declaration]};
 
   port_body_declaration = 
     {indication} indications_declaration |
     {request} requests_declaration;
 
-  indications_declaration =
-    indication_keyword l_brc indication_declarations r_brc;
+  indications_declaration {-> indications_declaration}=
+    indication_keyword l_brc indication_declarations r_brc {-> New indications_declaration([indication_declarations.class_type])};
 
-  indication_declarations = 
-    {declaration} indication_declaration |
-    {declarations} indication_declarations comma indication_declaration;
+  indication_declarations {-> class_type*}= 
+    {declaration} indication_declaration {-> [indication_declaration.class_type]}|
+    {declarations} indication_declarations comma indication_declaration {-> [indication_declarations.class_type, indication_declaration.class_type]};
 
-  indication_declaration = 
-    class_type;
+  indication_declaration {-> class_type} = 
+    class_type {-> class_type};
 
-  requests_declaration =
-    request_keyword l_brc request_declarations r_brc;
+  requests_declaration {-> requests_declaration}=
+    request_keyword l_brc request_declarations r_brc {-> New requests_declaration([request_declarations.class_type])};
 
-  request_declarations = 
-    {declaration} request_declaration |
-    {declarations} request_declarations comma request_declaration;
+  request_declarations {-> class_type*} = 
+    {declaration} request_declaration {-> [request_declaration.class_type]}|
+    {declarations} request_declarations comma request_declaration {-> [request_declarations.class_type, request_declaration.class_type]};
 
-  request_declaration = 
-    class_type;
+  request_declaration {-> class_type} = 
+    class_type {-> class_type};
 
-  header_fields = 
-    l_par formal_parameter_list? r_par;
+  header_fields {-> header_fields} = 
+    l_par formal_parameter_list? r_par {-> New header_fields(formal_parameter_list)};
 
-  component_body = 
-    l_brc component_body_declarations? r_brc;
+  component_body {-> component_body}= 
+    l_brc component_body_declarations? r_brc {-> New component_body([component_body_declarations.component_body_declaration])};
 
-  component_body_declarations = 
-    {declaration} component_body_declaration |
-    {declarations} component_body_declarations component_body_declaration;
+  component_body_declarations {-> component_body_declaration*} = 
+    {declaration} component_body_declaration {-> [component_body_declaration]}|
+    {declarations} component_body_declarations component_body_declaration {-> [component_body_declarations.component_body_declaration, component_body_declaration]};
 
   component_body_declaration = 
     {member} class_member_declaration |
@@ -1955,46 +1956,46 @@ Productions
     {disconnect} disconnect_statement |
     {unsubscribe} unsubscribe_statement;
 
-  init_declaration = 
-    modifiers? init_keyword header_fields? constructor_body;
+  init_declaration {-> init_declaration} = 
+    modifiers? init_keyword header_fields? constructor_body {-> New init_declaration([modifiers.modifier], header_fields, constructor_body)};
 
-  port_field_declaration = 
-    {requires} requires_port |
-    {provides} provides_port;
+  port_field_declaration {-> port_field_declaration} = 
+    {requires} requires_port {-> New port_field_declaration.requires(requires_port.class_type, requires_port.identifier)}|
+    {provides} provides_port {-> New port_field_declaration.provides(provides_port.class_type, provides_port.identifier)};
 
-  requires_port = 
-    requires_keyword class_type identifier semi;
+  requires_port {-> class_type identifier} = 
+    requires_keyword class_type identifier semi {-> class_type identifier};
 
-  provides_port = 
-    provides_keyword class_type identifier semi;
+  provides_port {-> class_type identifier} = 
+    provides_keyword class_type identifier semi {-> class_type identifier};
 
-  child_declaration = 
-    component_keyword class_type component_initialization? identifier semi;
+  child_declaration {-> child_declaration} = 
+    component_keyword class_type component_initialization? identifier semi {-> New child_declaration(class_type, component_initialization, identifier)};
 
-  component_initialization = 
-    l_par argument_list? r_par;
+  component_initialization {-> component_initialization} = 
+    l_par argument_list? r_par {-> New component_initialization([argument_list.argument])};
 
-  handle_declaration = 
-    handle_keyword [handler_id]:identifier r_arrow [port_id]:identifier colon class_type [event_id]:identifier block;
+  handle_declaration {-> handle_declaration} = 
+    handle_keyword [handler_id]:identifier r_arrow [port_id]:identifier colon class_type [event_id]:identifier block {-> New handle_declaration(handler_id, port_id, class_type, event_id, block)};
 
-  handler_declaration =
-    handler_keyword [handler_id]:identifier colon class_type [event_id]:identifier block;
+  handler_declaration {-> handler_declaration} =
+    handler_keyword [handler_id]:identifier colon class_type [event_id]:identifier block{-> New handler_declaration(handler_id, class_type, event_id, block)};
 
-  connect_statement =
-    connect_keyword [provided_id]:identifier r_arrow [required_id]:identifier colon class_type semi;
+  connect_statement {-> connect_statement} =
+    connect_keyword [provided_id]:identifier r_arrow [required_id]:identifier colon class_type semi {-> New connect_statement(provided_id, required_id, class_type)};
 
-  subscribe_statement = 
-    subscribe_keyword [handler_id]:identifier r_arrow [port_id]:identifier semi;
+  subscribe_statement {-> subscribe_statement} = 
+    subscribe_keyword [handler_id]:identifier r_arrow [port_id]:identifier semi {-> New subscribe_statement(handler_id, port_id)};
 
-  disconnect_statement = 
-    disconnect_keyword [provided_id]:identifier r_arrow [required_id]:identifier colon class_type semi;
+  disconnect_statement {-> disconnect_statement} = 
+    disconnect_keyword [provided_id]:identifier r_arrow [required_id]:identifier colon class_type semi {-> New disconnect_statement(provided_id, required_id, class_type)};
 
-  unsubscribe_statement = 
-    unsubscribe_keyword [handler_id]:identifier r_arrow [port_id]:identifier semi;
+  unsubscribe_statement {-> unsubscribe_statement} = 
+    unsubscribe_keyword [handler_id]:identifier r_arrow [port_id]:identifier semi {-> New unsubscribe_statement(handler_id, port_id)};
 
-  trigger_statement =
-    {name} trigger_keyword name r_arrow identifier semi |
-    {expression} trigger_keyword expression_no_name r_arrow identifier semi;
+  trigger_statement {-> trigger_statement} =
+    {name} trigger_keyword name r_arrow identifier semi {-> New trigger_statement(New expression.name(name.name), identifier)} |
+    {expression} trigger_keyword expression_no_name r_arrow identifier semi {-> New trigger_statement(New expression.expression(expression_no_name.expression_no_name), identifier)};
 
 
 //////////////////////////////////////////
@@ -2019,6 +2020,9 @@ import_declaration =
 type_declaration =
     {class} class_declaration |
     {interface} interface_declaration |
+    {port} port_declaration |
+    {event} event_declaration |
+    {component} component_declaration |
     {semi} semi;
 
 modifier =
@@ -2055,8 +2059,7 @@ normal_annotation = name element_value_pair*;
 element_value_pair = identifier element_value;
 
 element_value =
-    {conditional} conditional_expression_no_name |
-    {name} name |
+    {conditional} expression |
     {annotation} annotation |
     {array} element_value_array_initializer;
 
@@ -2066,7 +2069,7 @@ marker_annotation = identifier;
 
 single_element_annotation = identifier element_value;
 
-normal_class_declaration = modifier* identifier type_parameter* interface_type* class_body;
+normal_class_declaration = modifier* identifier type_parameter* [parent]:class_type? interface_type* class_body;
 
 enum_declaration = modifier* identifier interface_type* enum_body;
 
@@ -2074,7 +2077,70 @@ normal_interface_declaration = modifier* identifier type_parameter* [extends_int
 
 annotation_type_declaration = modifier* identifier annotation_type_body;
 
-type_parameter = identifier type_bound*;
+type_parameter = identifier type_bound?;
+
+type_bound = interface_type+;
+
+// Kola
+
+port_declaration = 
+    modifier* identifier port_body;
+
+event_declaration =
+    modifier* identifier type_parameter* header_fields? interface_type* class_body;
+
+header_fields = formal_parameter_list?;
+
+component_declaration =
+    modifier* identifier type_parameter* component_body;
+
+port_body = port_body_declaration*;
+
+port_body_declaration = 
+    {indication} indications_declaration |
+    {request} requests_declaration;
+
+indications_declaration = class_type*;
+
+requests_declaration = class_type*;
+
+component_body = component_body_declaration*;
+
+component_body_declaration = 
+    {member} class_member_declaration |
+    {instance} instance_initializer |
+    {static} static_initializer |
+    {constuctor} constructor_declaration |
+    {init} init_declaration |
+    {port} port_field_declaration |
+    {component} child_declaration |
+    {handling} handling_declaration;
+
+handling_declaration = 
+    {handle} handle_declaration |
+    {handler} handler_declaration |
+    {connect} connect_statement |
+    {subscribe} subscribe_statement |
+    {disconnect} disconnect_statement |
+    {unsubscribe} unsubscribe_statement;
+
+init_declaration = modifier* header_fields? constructor_body;
+
+port_field_declaration = 
+    {requires} class_type identifier |
+    {provides} class_type identifier;
+
+child_declaration = 
+    class_type component_initialization? identifier;
+
+component_initialization = argument*;
+
+handle_declaration = [handler_id]:identifier [port_id]:identifier class_type [event_id]:identifier block;
+
+handler_declaration =[handler_id]:identifier class_type [event_id]:identifier block;
+
+
+// - Kola
 
 literal =
     {integer} integer_literal |
@@ -2084,13 +2150,17 @@ literal =
     {string} string_literal |
     {null} null_literal;
 
-class_type = type_decl_specifier type_argument*;
+class_type = type_decl_specifier type_arguments?;
 
-interface_type = type_decl_specifier type_argument*;
+interface_type = type_decl_specifier type_arguments?;
 
-type_decl_specifier = name_with_args+;
+class_or_interface_type_no_arguments = name;
 
-name_with_args = name type_arguments?;
+class_or_interface_type = type_decl_specifier type_arguments?;
+
+type_decl_specifier = name args_with_name*;
+
+args_with_name = type_arguments name;
 
 class_name = name;
 
@@ -2132,14 +2202,13 @@ reference_type =
     {class} class_or_interface_type |
     {array} array_type;
 
-class_or_interface_type_no_arguments = name;
-
-class_or_interface_type =
-    type_decl_specifier type_arguments?;
+reference_type_no_arguments =
+    {class} class_or_interface_type_no_arguments |
+    {array} array_type_no_arguments;
 
 array_type =
-    {class} class_or_interface_type |
-    {primitive} primitive_type;
+    {class} class_or_interface_type dim+ |
+    {primitive} primitive_type dim+;
 
 array_type_no_arguments =
     {class} class_or_interface_type_no_arguments dim+ |
@@ -2152,10 +2221,6 @@ type =
 type_no_arguments =
     {primitive} primitive_type |
     {reference} reference_type_no_arguments;
-
-reference_type_no_arguments =
-    {class} class_or_interface_type_no_arguments |
-    {array} array_type_no_arguments;
 
 class_body = class_body_declaration*;
 
@@ -2189,13 +2254,13 @@ constant_declaration = modifier* type variable_declarator+;
 
 variable_declarator =
     {id} variable_declarator_id |
-    {initializer} variable_declarator_id variable_initializer_no_name |
+    {initializer} variable_declarator_id variable_initializer |
     {initializer_name} variable_declarator_id name;
 
-variable_declarator_id = identifier;
+variable_declarator_id = identifier dim*;
 
-variable_initializer_no_name =
-    {expression} expression_no_name |
+variable_initializer =
+    {expression} expression |
     {initializer} array_initializer;
 
 abstract_method_declaration =
@@ -2207,25 +2272,23 @@ method_declaration = method_header method_body;
 
 method_header = modifier* type_parameter* result method_declarator throws?;
 
-method_declarator = identifier formal_parameter_list?;
+method_declarator = identifier formal_parameter_list? dim*;
 
 annotation_type_body = annotation_type_element_declaration*;
 
 annotation_type_element_declaration =
-    {abstract} modifier* type identifier [default_value]:element_value |
+    {abstract} modifier* type identifier [default_value]:element_value? |
     {constant} constant_declaration |
     {class} class_declaration |
     {interface} interface_declaration |
     {semi} semi;
-
-type_bound = interface_type*;
 
 instance_initializer = block;
 
 static_initializer = block;
 
 array_initializer =
-    {variable} variable_initializer_no_name* |
+    {variable} variable_initializer* |
     {name} name;
 
 constructor_declaration = modifier* constructor_declarator throws? constructor_body;
@@ -2237,7 +2300,7 @@ simple_type_name = identifier;
 
 formal_parameter_list =
     {parameter} last_formal_parameter |
-    {parameters} formal_parameter* comma last_formal_parameter;
+    {parameters} formal_parameter* last_formal_parameter;
 
 last_formal_parameter =
     {variable} formal_parameter |
@@ -2279,7 +2342,8 @@ statement =
 
 statement_without_trailing_substatement =
     {block} block |
-    {expression_statement} expression_statement |
+    {empty_statement} |
+    {expression_statement} statement_expression |
     {assert_statement} assert_statement |
     {switch_statement} switch_statement |
     {do_statement} do_statement |
@@ -2309,71 +2373,46 @@ labeled_statement_no_short_if = identifier statement_no_short_if;
 local_variable_declaration =
     modifier* type variable_declarator+;
 
-expression_statement = statement_expression;
+//expression_statement = statement_expression;
 
-statement_expression =
-    {assignment} assignment |
-    {pre_increment} pre_increment_expression |
-    {pre_decrement} pre_decrement_expression |
-    {post_increment} post_increment_expression |
-    {post_decrement} post_decrement_expression |
-    {method} method_invocation |
-    {class} class_instance_creation_expression;
+statement_expression = expression_no_name;
 
-if_then_statement =
-    {expression} [cond]:expression_no_name [then]:statement |
-    {name} [cond]:name [then]:statement;
+if_then_statement = [cond]:expression [then]:statement;
 
-if_then_else_statement =
-    {expression} [cond]:expression_no_name [then]:statement_no_short_if [else]:statement |
-    {name} [cond]:name [then]:statement_no_short_if [else]:statement;
+if_then_else_statement = [cond]:expression [then]:statement_no_short_if [else]:statement;
 
-if_then_else_statement_no_short_if =
-    {expression} [cond]:expression_no_name [then]:statement_no_short_if [else]:statement_no_short_if |
-    {name} [cond]:name [then]:statement_no_short_if [else]:statement_no_short_if;
+if_then_else_statement_no_short_if = [cond]:expression [then]:statement_no_short_if [else]:statement_no_short_if;
 
 
-while_statement =
-    {expression} [cond]:expression_no_name [do]:statement |
-    {name} [cond]:name [do]:statement;
+while_statement = [cond]:expression [do]:statement;
 
-while_statement_no_short_if =
-    {expression} [cond]:expression_no_name [do]:statement_no_short_if |
-    {name} [cond]:name [do]:statement_no_short_if;
+while_statement_no_short_if = [cond]:expression [do]:statement_no_short_if;
 
 for_statement =
     {basic_for} basic_for_statement |
     {enhanced_for} enhanced_for_statement;
 
-basic_for_statement =
+basic_for_statement = 
     {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement |
-    {name} [init]:for_init? [cond]:name [update]:for_update? [do]:statement;
+    {name} [init]:for_init? [cond]:name? [update]:for_update? [do]:statement;
 
 for_statement_no_short_if =
     {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement_no_short_if |
     {name} [init]:for_init? [cond]:name [update]:for_update? [do]:statement_no_short_if;
 
 for_init =
-    {statement} statement_expression+ |
+    {statement} expression_no_name+ |
     {local} local_variable_declaration;
 
-for_update = statement_expression+;
+for_update = expression_no_name+;
 
-enhanced_for_statement =
-    {expression} [variable]:formal_parameter [iterable]:expression_no_name [do]:statement |
-    {name} [variable]:formal_parameter [iterable]:name [do]:statement;
+enhanced_for_statement = [variable]:formal_parameter [iterable]:expression [do]:statement;
 
 assert_statement =
-    {assert} expression_no_name |
-    {assert_name} name |
-    {expression} [expression1]:expression_no_name [expression2]:expression_no_name |
-    {expression_name2} [expression1]:expression_no_name [expression2]:name |
-    {expression_name1} [expression1]:name [expression2]:expression_no_name |
-    {expression_name1_name2} [expression1]:name [expression2]:name;
+    {simple} [cond]:expression |
+    {details} [cond]:expression [msg]:expression;
 
-switch_statement =
-    {expression} [target]:expression_no_name switch_block |
-    {name} [target]:name switch_block;
+switch_statement = [target]:expression switch_block;
 
 switch_block = switch_block_statement_group* switch_label*;
 
@@ -2385,25 +2424,19 @@ switch_label =
     {constant_name} [case]:name |
     {default} default_keyword;
 
-do_statement =
-    {expression} [do]:statement [cond]:expression_no_name |
-    {name} [do]:statement [cond]:name;
+do_statement = [do]:statement [cond]:expression;
 
 break_statement = identifier?;
 
 continue_statement = identifier?;
 
 return_statement =
-    {expression} [return_value]:expression_no_name? |
-    {name} [return_value]:name;
+    {expression} [return_value]:expression |
+    {void} ;
 
-synchronized_statement =
-    {expression} [lock]:expression_no_name block |
-    {name} [lock]:name block;
+synchronized_statement = [lock]:expression block;
 
-throw_statement =
-    {expression} [throwable]:expression_no_name |
-    {name} [throwable]:name;
+throw_statement = [throwable]:expression;
 
 try_statement =
     {catch} block catch_clause+ |
@@ -2416,14 +2449,11 @@ catch_formal_parameter = modifier* [catch_types]:class_type+ variable_declarator
 
 finally = block;
 
-try_with_resources_statement =
-    resource_specification block variable_declarator_id catch_clause* finally?;
+try_with_resources_statement = resource_specification block variable_declarator_id catch_clause* finally?;
 
 resource_specification = resource+;
 
-resource =
-    {expression} modifier* type variable_declarator_id expression_no_name |
-    {name} modifier* type variable_declarator_id name;
+resource = modifier* type variable_declarator_id expression;
 
 connect_statement = [provided_id]:identifier [required_id]:identifier class_type;
 
@@ -2433,13 +2463,7 @@ disconnect_statement = [provided_id]:identifier [required_id]:identifier class_t
 
 unsubscribe_statement = [handler_id]:identifier [port_id]:identifier;
 
-trigger_statement =
-    {name} [event]:name [port_id]:identifier |
-    {expression} [event]:expression_no_name [port_id]:identifier;
-
-assignment =
-    {assignment} left_hand_side assignment_operator [value]:assignment_expression_no_name |
-    {name} left_hand_side assignment_operator [value]:name;
+trigger_statement = [event]:expression [port_id]:identifier;
 
 left_hand_side =
     {expression} name |
@@ -2465,226 +2489,81 @@ constructor_body = explicit_constructor_invocation? block_statement*;
 explicit_constructor_invocation =
     {this} [non_wild_type_arguments]:reference_type* argument* |
     {super} [non_wild_type_arguments]:reference_type* argument* |
-    {primary} primary [non_wild_type_arguments]:reference_type* argument*;
+    {primary} expression_no_name [non_wild_type_arguments]:reference_type* argument*;
 
-primary =
-    {primary} primary_no_new_array |
-    {array} array_creation_expression;
+expression = 
+    {name} name |
+    {expression} expression_no_name;
 
-primary_no_new_array =
+expression_no_name = 
+    {assignment} left_hand_side assignment_operator expression |
+    {qmark} [cond]:expression [true]:expression [false]:expression |
+    {cor} [left]:expression [right]:expression |
+    {cand} [left]:expression [right]:expression |
+    {ior} [left]:expression [right]:expression |
+    {eor} [left]:expression [right]:expression |
+    {and} [left]:expression [right]:expression |
+    {eq} [left]:expression [right]:expression |
+    {neq} [left]:expression [right]:expression |
+    {instanceof} [left]:expression [right]:reference_type |
+    {lt} [left]:expression [right]:expression |
+    {gt} [left]:expression [right]:expression |
+    {lteq} [left]:expression [right]:expression |
+    {gteq} [left]:expression [right]:expression |
+    {shl} [left]:expression [right]:expression |
+    {shr} [left]:expression [right]:expression |
+    {ushr} [left]:expression [right]:expression |
+    {plus} [left]:expression [right]:expression |
+    {minus} [left]:expression [right]:expression |
+    {mul} [left]:expression [right]:expression |
+    {div} [left]:expression [right]:expression |
+    {mod} [left]:expression [right]:expression |
+    {pre_inc} expression |
+    {pre_decr} expression |
+    {uplus} expression |
+    {uminus} expression |
+    {tilde} expression |
+    {emark} expression |
+    {pcast} [target]:primitive_type expression |
+    {rcast} [target]:reference_type expression |
+    {post_inc} expression |
+    {post_decr} expression |
     {literal} literal |
     {type} type_no_arguments |
     {void} |
     {this} |
     {class} class_name |
-    {expression} expression_no_name |
-    {expression_name} name |
-    {instance} class_instance_creation_expression |
     {field} field_access |
     {method} method_invocation |
-    {array} array_access;
+    {array} array_access |
+    {array_creation} array_creation_expression |
+    {instance} class_instance_creation_expression |
+    {expression} expression;
 
-
-expression_no_name = assignment_expression_no_name;
 
 constant_expression_no_name = expression_no_name;
 
-assignment_expression_no_name =
-    {expression} conditional_expression_no_name |
-    {assignment} assignment;
-
-unary_expression_no_name =
-   {increment} pre_increment_expression |
-   {decrement} pre_decrement_expression |
-   {plus} unary_expression_no_name |
-   {plus_name} name |
-   {minus} unary_expression_no_name |
-   {minus_name} name |
-   {unary} unary_expression_not_plus_minus_no_name;
-
-pre_increment_expression =
-    {unary} unary_expression_no_name |
-    {name} name;
-
-pre_decrement_expression =
-    {unary} unary_expression_no_name |
-    {name} name;
-
-postfix_expression_no_name =
-    {primary} primary |
-    {increment} post_increment_expression |
-    {decrement} post_decrement_expression;
-
-post_increment_expression =
-    {postfix} postfix_expression_no_name |
-    {name} name;
-
-post_decrement_expression =
-    {postfix} postfix_expression_no_name |
-    {name} name;
-
-unary_expression_not_plus_minus_no_name =
-    {postfix} postfix_expression_no_name |
-    {tilde} unary_expression_no_name |
-    {tilde_name} name |
-    {emark} unary_expression_no_name |
-    {emark_name} name |
-    {cast} cast_expression;
-
-cast_expression =
-    {primitive} [target]:primitive_type [expression]:unary_expression_no_name |
-    {primitive_name} [target]:primitive_type [expression]:name |
-    {reference} [target]:reference_type [expression]:unary_expression_not_plus_minus_no_name |
-    {reference_name} [target]:reference_type [expression]:name;
-
-conditional_expression_no_name =
-    {or} conditional_or_expression_no_name |
-    {qmark_colon} [cond]:conditional_or_expression_no_name [true]:expression_no_name [false]:conditional_expression_no_name |
-    {qmark_name_colon} [cond]:conditional_or_expression_no_name [true]:name [false]:conditional_expression_no_name |
-    {qmark_colon_name} [cond]:conditional_or_expression_no_name [true]:expression_no_name [false]:name |
-    {qmark_name_colon_name} [cond]:conditional_or_expression_no_name [true]:name [false]:name |
-    {name_qmark_colon} [cond]:name [true]:expression_no_name [false]:conditional_expression_no_name |
-    {name_qmark_name_colon} [cond]:name [true]:name [false]:conditional_expression_no_name |
-    {name_qmark_colon_name} [cond]:name [true]:expression_no_name [false]:name |
-    {name_qmark_name_colon_name} [cond]:name [true]:name [false]:name;
-
-conditional_or_expression_no_name =
-    {and} conditional_and_expression_no_name |
-    {bar} [left]:conditional_or_expression_no_name [right]:conditional_and_expression_no_name |
-    {bar_name} [left]:conditional_or_expression_no_name [right]:name |
-    {name_bar} [left]:name [right]:conditional_and_expression_no_name |
-    {name_bar_name} [left]:name [right]:name;
-
-conditional_and_expression_no_name =
-    {or} inclusive_or_expression_no_name |
-    {amp} [left]:conditional_and_expression_no_name [right]:inclusive_or_expression_no_name |
-    {amp_name} [left]:conditional_and_expression_no_name [right]:name |
-    {name_amp} [left]:name [right]:inclusive_or_expression_no_name |
-    {name_amp_name} [left]:name [right]:name;
-
-inclusive_or_expression_no_name =
-    {or} exclusive_or_expression_no_name |
-    {bar} [left]:inclusive_or_expression_no_name [right]:exclusive_or_expression_no_name |
-    {bar_name} [left]:inclusive_or_expression_no_name [right]:name |
-    {name_bar} [left]:name [right]:exclusive_or_expression_no_name |
-    {name_bar_name} [left]:name [right]:name;
-
-exclusive_or_expression_no_name =
-    {and} and_expression_no_name |
-    {caret} [left]:exclusive_or_expression_no_name [right]:and_expression_no_name |
-    {caret_name} [left]:exclusive_or_expression_no_name [right]:name |
-    {name_caret} [left]:name [right]:and_expression_no_name |
-    {name_caret_name} [left]:name [right]:name;
-
-and_expression_no_name =
-    {equality} equality_expression_no_name |
-    {amp} [left]:and_expression_no_name [right]:equality_expression_no_name |
-    {amp_name} [left]:and_expression_no_name [right]:name |
-    {name_amp} [left]:name [right]:equality_expression_no_name |
-    {name_amp_name} [left]:name [right]:name;
-
-equality_expression_no_name =
-    {relational} relational_expression_no_name |
-    {eq} [left]:equality_expression_no_name [right]:relational_expression_no_name |
-    {eq_name} [left]:equality_expression_no_name [right]:name |
-    {name_eq} [left]:name [right]:relational_expression_no_name |
-    {name_eq_name} [left]:name [right]:name |
-    {neq} [left]:equality_expression_no_name [right]:relational_expression_no_name |
-    {neq_name} [left]:equality_expression_no_name [right]:name |
-    {name_neq} [left]:name [right]:relational_expression_no_name |
-    {name_neq_name} [left]:name [right]:name;
-
-relational_expression_no_name =
-    {no_instanceof} relational_expression_no_name_no_instanceof |
-    {instanceof} [left]:relational_expression_no_name [right]:reference_type |
-    {name_instanceof} [left]:name [right]:reference_type;
-
-relational_expression_no_name_no_instanceof =
-    {shift} shift_expression_no_name |
-    {lt} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
-    {lt_name} [left]:shift_expression_no_name [right]:name |
-    {name_lt} [left]:name [right]:relational_expression_no_name_no_instanceof |
-    {name_lt_name} [left]:name [right]:name |
-    {gt} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
-    {gt_name} [left]:shift_expression_no_name [right]:name |
-    {name_gt} [left]:name [right]:relational_expression_no_name_no_instanceof |
-    {name_gt_name} [left]:name [right]:name |
-    {lteq} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
-    {lteq_name} [left]:shift_expression_no_name [right]:name |
-    {name_lteq} [left]:name [right]:relational_expression_no_name_no_instanceof |
-    {name_lteq_name} [left]:name [right]:name |
-    {gteq} [left]:shift_expression_no_name [right]:relational_expression_no_name_no_instanceof |
-    {gteq_name} [left]:shift_expression_no_name [right]:name |
-    {name_gteq} [left]:name [right]:relational_expression_no_name_no_instanceof |
-    {name_gteq_name} [left]:name [right]:name;
-
-shift_expression_no_name =
-    {additive} additive_expression_no_name |
-    {shl} [left]:shift_expression_no_name [right]:additive_expression_no_name |
-    {shl_name} [left]:shift_expression_no_name [right]:name |
-    {name_shl} [left]:name [right]:additive_expression_no_name |
-    {name_shl_name} [left]:name [right]:name |
-    {shr} [left]:shift_expression_no_name [right]:additive_expression_no_name |
-    {shr_name} [left]:shift_expression_no_name [right]:name |
-    {name_shr} [left]:name [right]:additive_expression_no_name |
-    {name_shr_name} [left]:name [right]:name |
-    {ushr} [left]:shift_expression_no_name [right]:additive_expression_no_name |
-    {ushr_name} [left]:shift_expression_no_name [right]:name |
-    {name_ushr} [left]:name [right]:additive_expression_no_name |
-    {name_ushr_name} [left]:name [right]:name;
-
- additive_expression_no_name =
-    {multiplicative} multiplicative_expression_no_name |
-    {plus} [left]:additive_expression_no_name [right]:multiplicative_expression_no_name |
-    {plus_name} [left]:additive_expression_no_name [right]:name |
-    {name_plus} [left]:name [right]:multiplicative_expression_no_name |
-    {name_plus_name} [left]:name [right]:name |
-    {minus} [left]:additive_expression_no_name [right]:multiplicative_expression_no_name |
-    {minus_name} [left]:additive_expression_no_name [right]:name |
-    {name_minus} [left]:name [right]:multiplicative_expression_no_name |
-    {name_minus_name} [left]:name [right]:name;
-
-multiplicative_expression_no_name =
-    {unary} unary_expression_no_name |
-    {star} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
-    {star_name} [left]:multiplicative_expression_no_name [right]:name |
-    {name_star} [left]:name [right]:unary_expression_no_name |
-    {name_star_name} [left]:name [right]:name |
-    {slash} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
-    {slash_name} [left]:multiplicative_expression_no_name [right]:name |
-    {name_slash} [left]:name [right]:unary_expression_no_name |
-    {name_slash_name} [left]:name slash [right]:name |
-    {percent} [left]:multiplicative_expression_no_name [right]:unary_expression_no_name |
-    {percent_name} [left]:multiplicative_expression_no_name [right]:name |
-    {name_percent} [left]:name [right]:unary_expression_no_name |
-    {name_percent_name} [left]:name [right]:name;
-
-
 method_invocation =
     {method} name argument* |
-    {primary} primary [non_wild_type_arguments]:reference_type* identifier argument* |
+    {primary} expression_no_name [non_wild_type_arguments]:reference_type* identifier argument* |
     {super} [non_wild_type_arguments]:reference_type* identifier argument* |
     {class} class_name [non_wild_type_arguments]:reference_type* identifier argument* |
     {type} name [non_wild_type_arguments]:reference_type* identifier argument*;
 
 class_instance_creation_expression =
     {new} type_arguments? type_decl_specifier type_arguments_or_diamond? argument* class_body? |
-    {primary} primary type_arguments? identifier type_arguments_or_diamond? argument* class_body?;
+    {primary} expression_no_name type_arguments? identifier type_arguments_or_diamond? argument* class_body?;
 
 type_arguments_or_diamond =
     {type_arguments} type_arguments |
     {diamond} ;
 
 field_access =
-    {primary} primary identifier |
+    {primary} expression_no_name identifier |
     {super} identifier |
     {class} class_name identifier;
 
-array_access =
-    {expression} [array]:name [field]:expression_no_name |
-    {expression_name} [array]:name [field]:name |
-    {primary} [array]:primary_no_new_array [field]:expression_no_name |
-    {primary_name} [array]:primary_no_new_array [field]:name;
+array_access = [array]:expression [field]:expression;
 
 array_creation_expression =
     {primitive} primitive_type dim_expr+ dim* |
@@ -2692,9 +2571,7 @@ array_creation_expression =
     {primitive_initializer} primitive_type dim+ array_initializer |
     {class_initializer} class_or_interface_type dim+ array_initializer;
 
-dim_expr =
-    {expression} [expression]:expression_no_name |
-    {name} [expression]:name;
+dim_expr = expression;
 
 dim = ;
 
