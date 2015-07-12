@@ -33,7 +33,7 @@ import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AJavaCompilationUnit;
 import se.sics.kola.node.ANormalClassDeclaration;
 import se.sics.kola.node.APackageDeclaration;
-import se.sics.kola.node.ASingleTypeImportDeclaration;
+import se.sics.kola.node.ASingleImportDeclaration;
 import se.sics.kola.node.Start;
 
 /**
@@ -43,6 +43,7 @@ import se.sics.kola.node.Start;
 public class JavaSourceGenerator extends DepthFirstAdapter {
 
     JCodeModel unit;
+    JPackage p;
 
     @Override
     public void inStart(Start node) {
@@ -72,13 +73,13 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
     }
 
     @Override
-    public void outAPackageDeclaration(APackageDeclaration node) {
-        JPackage p = unit._package(node.getName().toString());
+    public void inAPackageDeclaration(APackageDeclaration node) {
+        p = unit._package(node.getName().toString());
         System.out.println("Creating package: " + p.name());
     }
     
     @Override
-    public void outASingleTypeImportDeclaration(ASingleTypeImportDeclaration node) {
+    public void outASingleImportDeclaration(ASingleImportDeclaration node) {
         JClass c = unit.ref(node.getName().toString());
         System.out.println("Importing class: " + c.fullName());
     }

@@ -556,11 +556,14 @@ Productions
   //  {ambiguous} ambiguous_name dot identifier;
 
   name {-> name} =
-    identifier name_tail* {-> New name([identifier, name_tail.identifier])};
+    identifier name_tail? {-> New name([identifier, name_tail.identifier])};
 
-  name_tail {-> identifier} =
-    dot identifier {-> identifier};
+  //name_tail {-> identifier} =
+  //  dot identifier {-> identifier};
 
+  name_tail {-> identifier*} =
+    {identifier} dot identifier {-> [identifier]} |
+    {name} name_tail dot identifier {-> [name_tail.identifier, identifier]};
 
   // 7.3
 
@@ -583,7 +586,7 @@ Productions
   // modifiers? instead of annotations?
 
   package_declaration {-> package_declaration} =
-    modifiers? package_keyword name semi {-> New package_declaration([modifiers.modifier], name)};
+    modifiers? package_keyword name semi {-> New package_declaration([modifiers.modifier], name.name)};
 
   // 7.5
 
@@ -594,16 +597,17 @@ Productions
     {demand} static_import_on_demand_declaration {-> static_import_on_demand_declaration.import_declaration};
 
   single_type_import_declaration {-> import_declaration} =
-    import_keyword name semi {-> New import_declaration.single(name)};
+    import_keyword name semi {-> New import_declaration.single(name.name)};
 
   type_import_on_demand_declaration {-> import_declaration} =
-    import_keyword name dot star semi {-> New import_declaration.type(name)};
+    import_keyword name dot star semi {-> New import_declaration.type(name.name)};
+
 
   single_static_import_declaration {-> import_declaration} =
-    import_keyword static_keyword name dot identifier semi {-> New import_declaration.static(name)};
+    import_keyword static_keyword name semi {-> New import_declaration.static(name.name)};
 
   static_import_on_demand_declaration {-> import_declaration} =
-    import_keyword static_keyword name dot star semi {-> New import_declaration.demand(name)};
+    import_keyword static_keyword name dot star semi {-> New import_declaration.demand(name.name)};
 
   // 7.6
 
@@ -720,7 +724,7 @@ Productions
   variable_declarator {-> variable_declarator} =
     {id} variable_declarator_id {-> New variable_declarator.id(variable_declarator_id)}|
     {initializer} variable_declarator_id assign variable_initializer_no_name {-> New variable_declarator.initializer(variable_declarator_id, variable_initializer_no_name.variable_initializer)}|
-    {initializer_name} variable_declarator_id assign name {-> New variable_declarator.initializer_name(variable_declarator_id, name)};
+    {initializer_name} variable_declarator_id assign name {-> New variable_declarator.initializer_name(variable_declarator_id, name.name)};
 
   //variable_declarator_id =
   //  {identifier} identifier |
@@ -1043,7 +1047,7 @@ Productions
     {single} single_element_annotation;
 
   normal_annotation {-> normal_annotation} =
-    at name l_par element_value_pairs? r_par {-> New normal_annotation(name, [element_value_pairs.element_value_pair])};
+    at name l_par element_value_pairs? r_par {-> New normal_annotation(name.name, [element_value_pairs.element_value_pair])};
 
   element_value_pairs {-> element_value_pair*} =
     {pair} element_value_pair {-> [element_value_pair.element_value_pair]}|
@@ -1486,11 +1490,11 @@ Productions
 
   argument_list {-> argument*} =
     {expression} expression_no_name argument_list_tail* {-> [New argument.expression(expression_no_name), argument_list_tail.argument]}|
-    {name} name argument_list_tail* {-> [New argument.name(name), argument_list_tail.argument]};
+    {name} name argument_list_tail* {-> [New argument.name(name.name), argument_list_tail.argument]};
 
   argument_list_tail {-> argument} =
     {expression} comma expression_no_name {-> New argument.expression(expression_no_name)}|
-    {name} comma name {-> New argument.name(name)};
+    {name} comma name {-> New argument.name(name.name)};
 
   // 15.10
 
