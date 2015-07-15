@@ -172,8 +172,7 @@ public interface Analysis extends Switch
     void caseASemiAnnotationTypeElementDeclaration(ASemiAnnotationTypeElementDeclaration node);
     void caseAInstanceInitializer(AInstanceInitializer node);
     void caseAStaticInitializer(AStaticInitializer node);
-    void caseAVariableArrayInitializer(AVariableArrayInitializer node);
-    void caseANameArrayInitializer(ANameArrayInitializer node);
+    void caseAArrayInitializer(AArrayInitializer node);
     void caseAConstructorDeclaration(AConstructorDeclaration node);
     void caseAConstructorDeclarator(AConstructorDeclarator node);
     void caseASimpleTypeName(ASimpleTypeName node);

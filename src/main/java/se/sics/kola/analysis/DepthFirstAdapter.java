@@ -3903,20 +3903,20 @@ public class DepthFirstAdapter extends AnalysisAdapter
         outAStaticInitializer(node);
     }
 
-    public void inAVariableArrayInitializer(AVariableArrayInitializer node)
+    public void inAArrayInitializer(AArrayInitializer node)
     {
         defaultIn(node);
     }
 
-    public void outAVariableArrayInitializer(AVariableArrayInitializer node)
+    public void outAArrayInitializer(AArrayInitializer node)
     {
         defaultOut(node);
     }
 
     @Override
-    public void caseAVariableArrayInitializer(AVariableArrayInitializer node)
+    public void caseAArrayInitializer(AArrayInitializer node)
     {
-        inAVariableArrayInitializer(node);
+        inAArrayInitializer(node);
         {
             List<PVariableInitializer> copy = new ArrayList<PVariableInitializer>(node.getVariableInitializer());
             for(PVariableInitializer e : copy)
@@ -3924,28 +3924,7 @@ public class DepthFirstAdapter extends AnalysisAdapter
                 e.apply(this);
             }
         }
-        outAVariableArrayInitializer(node);
-    }
-
-    public void inANameArrayInitializer(ANameArrayInitializer node)
-    {
-        defaultIn(node);
-    }
-
-    public void outANameArrayInitializer(ANameArrayInitializer node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseANameArrayInitializer(ANameArrayInitializer node)
-    {
-        inANameArrayInitializer(node);
-        if(node.getName() != null)
-        {
-            node.getName().apply(this);
-        }
-        outANameArrayInitializer(node);
+        outAArrayInitializer(node);
     }
 
     public void inAConstructorDeclaration(AConstructorDeclaration node)

@@ -29,9 +29,11 @@ import com.sun.codemodel.JPackage;
 import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import static se.sics.kola.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AClassTypeDeclaration;
 import se.sics.kola.node.AJavaCompilationUnit;
-import se.sics.kola.node.ANormalClassDeclaration;
 import se.sics.kola.node.APackageDeclaration;
 import se.sics.kola.node.ASingleImportDeclaration;
 import se.sics.kola.node.Start;
@@ -43,7 +45,9 @@ import se.sics.kola.node.Start;
 public class JavaSourceGenerator extends DepthFirstAdapter {
 
     JCodeModel unit;
-    JPackage p;
+    JPackage pack;
+    //Map<String, JClass> imports = new HashMap<>();
+    ResolutionContext context;
 
     @Override
     public void inStart(Start node) {
@@ -58,6 +62,9 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
     @Override
     public void inAJavaCompilationUnit(AJavaCompilationUnit node) {
         unit = new JCodeModel();
+        context = new ResolutionContext();
+        context.unit = unit;
+        context.imports = new HashMap<>();
     }
 
     @Override
@@ -67,42 +74,36 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             unit.build(new SingleStreamCodeWriter(out));
             out.writeTo(System.out);
+            unit = null;
+            context = null;
+            pack = null;
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
     @Override
-    public void inAPackageDeclaration(APackageDeclaration node) {
-        p = unit._package(node.getName().toString());
-        System.out.println("Creating package: " + p.name());
+    public void caseAPackageDeclaration(APackageDeclaration node) {
+        pack = unit._package(nameToString(node.getName()));
+        System.out.println("Creating package: " + pack.name());
     }
-    
+
     @Override
-    public void outASingleImportDeclaration(ASingleImportDeclaration node) {
-        JClass c = unit.ref(node.getName().toString());
+    public void caseASingleImportDeclaration(ASingleImportDeclaration node) {
+        JClass c = unit.ref(nameToString(node.getName()));
         System.out.println("Importing class: " + c.fullName());
+        context.imports.put(c.name(), c);
     }
-    
-    
-    
+
     @Override
-    public void inANormalClassDeclaration(ANormalClassDeclaration node) {
-        try {
-            JDefinedClass c = unit._class(node.getIdentifier().getText(), ClassType.CLASS);
-            System.out.println("Creating class: " + c.fullName());
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-    
-    public class ClassAdapter extends DepthFirstAdapter {
-        private final JDefinedClass clazz;
-        
-        ClassAdapter(JDefinedClass clazz) {
-            this.clazz = clazz;
-        }
-        
-        
+    public void caseAClassTypeDeclaration(AClassTypeDeclaration node) {
+        ClassAdapter ca = new ClassAdapter(context, new ClassAdapter.ClassParent() {
+
+            @Override
+            public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
+                return pack._class(mods, name, classTypeVal);
+            }
+        });
+        node.apply(ca);
     }
 }

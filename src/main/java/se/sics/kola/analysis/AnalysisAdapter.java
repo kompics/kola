@@ -1035,13 +1035,7 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAVariableArrayInitializer(AVariableArrayInitializer node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseANameArrayInitializer(ANameArrayInitializer node)
+    public void caseAArrayInitializer(AArrayInitializer node)
     {
         defaultCase(node);
     }

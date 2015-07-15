@@ -57,6 +57,10 @@ public class Main {
 
             Start ast = parser.parse();
 
+            // print
+            PrintAdapter printer = new PrintAdapter();
+            ast.apply(printer);
+            printer.print();
             // check program semantics
             //ast.apply(new SemanticAnalyser());
             // generate class file

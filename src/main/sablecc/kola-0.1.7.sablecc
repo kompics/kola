@@ -1086,8 +1086,8 @@ Productions
   //  l_brc variable_initializers? comma? r_brc;
 
   array_initializer {-> array_initializer} =
-    {variable} l_brc variable_initializers_no_name? comma? r_brc {-> New array_initializer.variable([variable_initializers_no_name.variable_initializer])} |
-    {name} l_brc name comma? r_brc {-> New array_initializer.name(name.name)};
+    {variable} l_brc variable_initializers_no_name? comma? r_brc {-> New array_initializer([variable_initializers_no_name.variable_initializer])} |
+    {name} l_brc name comma? r_brc {-> New array_initializer([New variable_initializer.expression(New expression.name(name.name))])};
 
   //variable_initializers =
   //  {initializer} variable_initializer |
@@ -2291,9 +2291,7 @@ instance_initializer = block;
 
 static_initializer = block;
 
-array_initializer =
-    {variable} variable_initializer* |
-    {name} name;
+array_initializer = variable_initializer*;
 
 constructor_declaration = modifier* constructor_declarator throws? constructor_body;
 
