@@ -155,7 +155,6 @@ public interface Analysis extends Switch
     void caseAConstantDeclaration(AConstantDeclaration node);
     void caseAIdVariableDeclarator(AIdVariableDeclarator node);
     void caseAInitializerVariableDeclarator(AInitializerVariableDeclarator node);
-    void caseAInitializerNameVariableDeclarator(AInitializerNameVariableDeclarator node);
     void caseAVariableDeclaratorId(AVariableDeclaratorId node);
     void caseAExpressionVariableInitializer(AExpressionVariableInitializer node);
     void caseAInitializerVariableInitializer(AInitializerVariableInitializer node);

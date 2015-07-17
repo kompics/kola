@@ -933,12 +933,6 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAInitializerNameVariableDeclarator(AInitializerNameVariableDeclarator node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseAVariableDeclaratorId(AVariableDeclaratorId node)
     {
         defaultCase(node);

@@ -724,7 +724,7 @@ Productions
   variable_declarator {-> variable_declarator} =
     {id} variable_declarator_id {-> New variable_declarator.id(variable_declarator_id)}|
     {initializer} variable_declarator_id assign variable_initializer_no_name {-> New variable_declarator.initializer(variable_declarator_id, variable_initializer_no_name.variable_initializer)}|
-    {initializer_name} variable_declarator_id assign name {-> New variable_declarator.initializer_name(variable_declarator_id, name.name)};
+    {initializer_name} variable_declarator_id assign name {-> New variable_declarator.initializer(variable_declarator_id, New variable_initializer.expression(New expression.name(name.name)))};
 
   //variable_declarator_id =
   //  {identifier} identifier |
@@ -2258,8 +2258,7 @@ constant_declaration = modifier* type variable_declarator+;
 
 variable_declarator =
     {id} variable_declarator_id |
-    {initializer} variable_declarator_id variable_initializer |
-    {initializer_name} variable_declarator_id name;
+    {initializer} variable_declarator_id variable_initializer;
 
 variable_declarator_id = identifier dim*;
 
