@@ -29,10 +29,8 @@ import static se.sics.kola.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AElementValuePair;
 import se.sics.kola.node.AMarkerAnnotation;
-import se.sics.kola.node.AName;
 import se.sics.kola.node.ANormalAnnotation;
 import se.sics.kola.node.ANormalClassDeclaration;
-import se.sics.kola.node.AReferenceTypeNoArguments;
 import se.sics.kola.node.ASingleElementAnnotation;
 import se.sics.kola.node.PElementValuePair;
 import se.sics.kola.node.PModifier;
@@ -92,7 +90,7 @@ public class ClassAdapter extends DepthFirstAdapter {
                 for (PElementValuePair pevp : node.getElementValuePair()) {
                     AElementValuePair aevp = (AElementValuePair) pevp;
                     String id = aevp.getIdentifier() != null ? aevp.getIdentifier().getText() : "value";
-                    AnnotationParameterAdapter apa = new AnnotationParameterAdapter(id, ann);
+                    AnnotationParameterAdapter apa = new AnnotationParameterAdapter(id, ann, context);
                     aevp.getElementValue().apply(apa);
                 }
             } else {
@@ -106,7 +104,7 @@ public class ClassAdapter extends DepthFirstAdapter {
             if (atype != null) {
                 ann = clazz.annotate(atype);
                 //System.out.println("Param:" + node.getElementValue().toString());
-                AnnotationParameterAdapter apa = new AnnotationParameterAdapter("value", ann);
+                AnnotationParameterAdapter apa = new AnnotationParameterAdapter("value", ann, context);
                 node.getElementValue().apply(apa);
             } else {
                 Logger.error(node.getIdentifier(), "Couldn't find annotation type.");
@@ -122,39 +120,6 @@ public class ClassAdapter extends DepthFirstAdapter {
                 Logger.error(node.getIdentifier(), "Couldn't find annotation type.");
             }
         }
-    }
-
-    class AnnotationParameterAdapter extends DepthFirstAdapter {
-
-        private final JAnnotationUse ann;
-        private final String id;
-
-        boolean reference = false;
-
-        AnnotationParameterAdapter(String id, JAnnotationUse ann) {
-            this.id = id;
-            this.ann = ann;
-        }
-
-        @Override
-        public void inAReferenceTypeNoArguments(AReferenceTypeNoArguments node) {
-            reference = true;
-        }
-
-        @Override
-        public void inAName(AName node) {
-            String name = nameToString(node);
-            JClass atype = context.imports.get(name);
-            if (atype == null) {
-                atype = context.unit.ref(name);
-            }
-            if (reference) {
-                ann.param(id, atype);
-            } else {
-                Logger.error(node.getIdentifier().element(), "Unsupported annotation type.");
-            }
-        }
-
     }
     
     public static interface ClassParent {

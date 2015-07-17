@@ -20,28 +20,36 @@
  */
 package se.sics.kola;
 
+import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JExpression;
-import se.sics.kola.ExpressionAdapter.JExprParent;
-import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionVariableInitializer;
+import com.sun.codemodel.JInvocation;
 
 /**
  *
  * @author lkroll
  */
-public class VarInitAdapter extends DepthFirstAdapter {
-    private final ResolutionContext context;
-    JExpression expr;
+class JBlockParent implements StatementAdapter.StatementParent {
+
+    private final JBlock block;
     
-    VarInitAdapter(ResolutionContext context) {
-        this.context = context;
+    public JBlockParent(JBlock block) {
+        this.block = block;
     }
-    
+
     @Override
-    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpression().apply(ea);
-        expr = ea.expr;
+    public JInvocation invoke(String method) {
+        return block.invoke(method);
     }
-    //TODO finish initalizer
+
+    @Override
+    public void addInvocation(JInvocation invoc) {
+        block.add(invoc);
+    }
+
+    @Override
+    public JInvocation invoke(JExpression lhs, String method) {
+        return block.invoke(lhs, method);
+    }
+
+    
 }

@@ -49,7 +49,8 @@ public class BlockStatementAdapter extends DepthFirstAdapter {
     
     @Override
     public void caseAStatementBlockStatement(AStatementBlockStatement node) {
-        
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(block), context);
+        node.getStatement().apply(sa);
     }
     
     @Override

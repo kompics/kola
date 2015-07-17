@@ -20,28 +20,22 @@
  */
 package se.sics.kola;
 
+import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
-import se.sics.kola.ExpressionAdapter.JExprParent;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionVariableInitializer;
+import se.sics.kola.node.AStringLiteral;
 
 /**
  *
  * @author lkroll
  */
-public class VarInitAdapter extends DepthFirstAdapter {
-    private final ResolutionContext context;
+public class LiteralAdapter extends DepthFirstAdapter {
     JExpression expr;
     
-    VarInitAdapter(ResolutionContext context) {
-        this.context = context;
-    }
-    
     @Override
-    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpression().apply(ea);
-        expr = ea.expr;
+    public void caseAStringLiteral(AStringLiteral node) {
+        String lit = node.getStringLiteral().getText();
+        lit = lit.substring(1, lit.length()-1); // strip quotes
+        expr = JExpr.lit(lit);
     }
-    //TODO finish initalizer
 }

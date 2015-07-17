@@ -107,6 +107,7 @@ class TypeAdapter extends DepthFirstAdapter {
                 iwoa.args.apply(tpa);
             }
         }
+        type = ctype;
     }
     
     @Override
@@ -146,6 +147,7 @@ class TypeAdapter extends DepthFirstAdapter {
                 iwoa.args.apply(tpa);
             }
         }
+        type = ctype;
     }
 
     @Override

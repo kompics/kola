@@ -20,28 +20,32 @@
  */
 package se.sics.kola;
 
-import com.sun.codemodel.JExpression;
-import se.sics.kola.ExpressionAdapter.JExprParent;
+import com.sun.codemodel.JStatement;
+import se.sics.kola.ExpressionAdapter.ExpressionParent;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionVariableInitializer;
+import se.sics.kola.node.AStatementExpression;
 
 /**
  *
  * @author lkroll
  */
-public class VarInitAdapter extends DepthFirstAdapter {
+public class StatementAdapter extends DepthFirstAdapter {
+    private final StatementParent parent;
     private final ResolutionContext context;
-    JExpression expr;
+    JStatement statement;
     
-    VarInitAdapter(ResolutionContext context) {
+    StatementAdapter(StatementParent parent, ResolutionContext context) {
+        this.parent = parent;
         this.context = context;
     }
     
     @Override
-    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpression().apply(ea);
-        expr = ea.expr;
+    public void caseAStatementExpression(AStatementExpression node) {
+        ExpressionAdapter ea = new ExpressionAdapter(parent, context);
+        node.getExpressionNoName().apply(ea);
     }
-    //TODO finish initalizer
+    
+    public static interface StatementParent extends ExpressionParent {
+        
+    }
 }

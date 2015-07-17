@@ -20,28 +20,47 @@
  */
 package se.sics.kola;
 
-import com.sun.codemodel.JExpression;
-import se.sics.kola.ExpressionAdapter.JExprParent;
+import com.sun.codemodel.JAnnotationUse;
+import com.sun.codemodel.JClass;
+import static se.sics.kola.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionVariableInitializer;
+import se.sics.kola.node.AName;
+import se.sics.kola.node.AReferenceTypeNoArguments;
 
 /**
  *
  * @author lkroll
  */
-public class VarInitAdapter extends DepthFirstAdapter {
+public class AnnotationParameterAdapter extends DepthFirstAdapter {
+
     private final ResolutionContext context;
-    JExpression expr;
-    
-    VarInitAdapter(ResolutionContext context) {
+    private final JAnnotationUse ann;
+    private final String id;
+
+    boolean reference = false;
+
+    AnnotationParameterAdapter(String id, JAnnotationUse ann, ResolutionContext context) {
+        this.id = id;
+        this.ann = ann;
         this.context = context;
     }
-    
+
     @Override
-    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpression().apply(ea);
-        expr = ea.expr;
+    public void inAReferenceTypeNoArguments(AReferenceTypeNoArguments node) {
+        reference = true;
     }
-    //TODO finish initalizer
+
+    @Override
+    public void inAName(AName node) {
+        String name = nameToString(node);
+        JClass atype = context.imports.get(name);
+        if (atype == null) {
+            atype = context.unit.ref(name);
+        }
+        if (reference) {
+            ann.param(id, atype);
+        } else {
+            Logger.error(node.getIdentifier().element(), "Unsupported annotation type.");
+        }
+    }
 }

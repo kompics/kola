@@ -20,6 +20,7 @@
  */
 package se.sics.kola;
 
+import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JMethod;
@@ -28,15 +29,20 @@ import java.util.LinkedList;
 import java.util.List;
 import static se.sics.kola.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AElementValuePair;
 import se.sics.kola.node.AFormalParameter;
+import se.sics.kola.node.AMarkerAnnotation;
 import se.sics.kola.node.AMethodDeclaration;
 import se.sics.kola.node.AMethodDeclarator;
 import se.sics.kola.node.AMethodHeader;
 import se.sics.kola.node.AName;
+import se.sics.kola.node.ANormalAnnotation;
+import se.sics.kola.node.ASingleElementAnnotation;
 import se.sics.kola.node.ATypeResult;
 import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.node.AVariableLastFormalParameter;
 import se.sics.kola.node.AVoidResult;
+import se.sics.kola.node.PElementValuePair;
 import se.sics.kola.node.PModifier;
 import se.sics.kola.node.PTypeParameter;
 
@@ -67,6 +73,10 @@ class ClassBodyAdapter extends DepthFirstAdapter {
         MethodDeclaratorAdapter da = new MethodDeclaratorAdapter();
         node.getMethodHeader().apply(da);
         JMethod method = clazz.method(mods, ra.resultType, da.name);
+        for (PModifier m : header.getModifier()) {
+            MethodAnnotationAdapter annap = new MethodAnnotationAdapter(method);
+            m.apply(annap);
+        }
         for (PTypeParameter tparam : header.getTypeParameter()) {
             TypeParameterAdapter tpa = new TypeParameterAdapter(context);
             tparam.apply(tpa);
@@ -88,15 +98,66 @@ class ClassBodyAdapter extends DepthFirstAdapter {
         BlockStatementAdapter bsa = new BlockStatementAdapter(context, method.body());
         node.getMethodBody().apply(bsa);
     }
-    
-    class ThrowsAdapter extends DepthFirstAdapter {
-        
+
+    class MethodAnnotationAdapter extends DepthFirstAdapter {
+
         private final JMethod method;
-        
+        private JAnnotationUse ann;
+
+        MethodAnnotationAdapter(JMethod method) {
+            this.method = method;
+        }
+
+        @Override
+        public void inANormalAnnotation(ANormalAnnotation node) {
+            String name = nameToString(node.getName());
+            JClass atype = context.unit.directClass(name);
+            if (atype != null) {
+                ann = method.annotate(atype);
+                //System.out.println("Param:" + node.getElementValuePair().toString());
+                for (PElementValuePair pevp : node.getElementValuePair()) {
+                    AElementValuePair aevp = (AElementValuePair) pevp;
+                    String id = aevp.getIdentifier() != null ? aevp.getIdentifier().getText() : "value";
+                    AnnotationParameterAdapter apa = new AnnotationParameterAdapter(id, ann, context);
+                    aevp.getElementValue().apply(apa);
+                }
+            } else {
+                Logger.error("Couldn't find annotation type.");
+            }
+        }
+
+        @Override
+        public void inASingleElementAnnotation(ASingleElementAnnotation node) {
+            JClass atype = context.imports.get(node.getIdentifier().getText());
+            if (atype != null) {
+                ann = method.annotate(atype);
+                //System.out.println("Param:" + node.getElementValue().toString());
+                AnnotationParameterAdapter apa = new AnnotationParameterAdapter("value", ann, context);
+                node.getElementValue().apply(apa);
+            } else {
+                Logger.error(node.getIdentifier(), "Couldn't find annotation type.");
+            }
+        }
+
+        @Override
+        public void inAMarkerAnnotation(AMarkerAnnotation node) {
+            JClass atype = context.imports.get(node.getIdentifier().getText());
+            if (atype != null) {
+                ann = method.annotate(atype);
+            } else {
+                Logger.error(node.getIdentifier(), "Couldn't find annotation type.");
+            }
+        }
+    }
+
+    class ThrowsAdapter extends DepthFirstAdapter {
+
+        private final JMethod method;
+
         ThrowsAdapter(JMethod method) {
             this.method = method;
         }
-        
+
         @Override
         public void caseAName(AName aname) {
             String name = nameToString(aname);
