@@ -25,5 +25,8 @@ package se.sics.kola;
  * @author lkroll
  */
 public class BasicTests {
-    
+    public boolean test() {
+        System.out.println("test");
+        return true;
+    }
 }

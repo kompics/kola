@@ -51,5 +51,16 @@ class JBlockParent implements StatementAdapter.StatementParent {
         return block.invoke(lhs, method);
     }
 
+    @Override
+    public void _return() {
+        block._return();
+    }
+
+    @Override
+    public void _return(JExpression expr) {
+        block._return(expr);
+    }
+
+    
     
 }

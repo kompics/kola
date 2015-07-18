@@ -20,7 +20,27 @@
  */
 package se.sics.kola;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import junit.framework.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,9 +51,121 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class PureJavaTest {
-    @Test
-    public void thisTest() throws IOException {
-        System.out.println(new java.io.File( "." ).getCanonicalPath());
-        Main.main(new String[]{"-s", "target/generated-sources/","src/test/resources/se/sics/kola/BasicTests.java"});
+
+    public static final String targetPath = "target/generated-sources/";
+
+    @Before
+    public void setUp() {
+        try {
+            clean(targetPath);
+        } catch (IOException ex) {
+            System.err.println("Couldn't clean target path: " + ex.getMessage());
+        }
     }
+
+    @Test
+    public void thisTest() {
+        try {
+            //System.out.println(new java.io.File( "." ).getCanonicalPath());
+
+            Main.main(new String[]{"-s", targetPath, "src/test/resources/se/sics/kola/BasicTests.kola"});
+            compile(targetPath);
+            ClassLoader cl = new URLClassLoader(new URL[]{(new File(targetPath)).toURI().toURL()});
+            Class testClass = cl.loadClass("se.sics.kola.BasicTests");
+            Object o = testClass.newInstance();
+            Method m = testClass.getMethod("test");
+            Object ret = m.invoke(o);
+            boolean res = ((Boolean) ret);
+            Assert.assertTrue(res);
+        } catch (IOException |
+                InterruptedException |
+                ClassNotFoundException |
+                InstantiationException |
+                IllegalAccessException |
+                NoSuchMethodException |
+                SecurityException |
+                IllegalArgumentException |
+                InvocationTargetException ex) {
+            ex.printStackTrace(System.err);
+            Assert.fail(ex.getMessage());
+        }
+    }
+
+    private void compile(String path) throws IOException, InterruptedException {
+        List<File> sourceFiles = findSources(path);
+        String[] args = new String[sourceFiles.size() + 1];
+        args[0] = "javac";
+        for (int i = 0; i < sourceFiles.size(); i++) {
+            args[i + 1] = sourceFiles.get(i).getAbsolutePath();
+        }
+        Process p = Runtime.getRuntime().exec(args);
+        String s = null;
+        BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+        BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+        System.out.println("****** BEGIN javac output ********");
+
+        while (!p.waitFor(100, TimeUnit.MILLISECONDS)) {
+            while ((s = stdInput.readLine()) != null) {
+                System.out.println(s);
+            }
+
+            // read any errors from the attempted command
+            while ((s = stdError.readLine()) != null) {
+                System.err.println(s);
+            }
+        }
+        System.out.println("****** END javac output ********");
+    }
+
+    private void clean(String path) throws IOException {
+        final Path start = Paths.get(path);
+        Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException e)
+                    throws IOException {
+                if (dir.equals(start)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (e == null) {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                } else {
+                    // directory iteration failed
+                    throw e;
+                }
+            }
+        });
+    }
+
+    private List<File> findSources(String path) {
+        List<File> sfiles = new ArrayList<>();
+        Queue<File> todo = new LinkedList<>();
+        todo.offer(new File(path));
+
+        while (!todo.isEmpty()) {
+            File f = todo.poll();
+            if (f.isDirectory()) {
+                File[] children = f.listFiles();
+                for (File child : children) {
+                    todo.offer(child);
+                }
+            } else {
+                String ext = com.google.common.io.Files.getFileExtension(f.getAbsolutePath());
+                if (ext.equalsIgnoreCase("java")) {
+                    sfiles.add(f);
+                }
+            }
+        }
+        return sfiles;
+    }
+
 }

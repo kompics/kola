@@ -21,11 +21,11 @@
 package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JInvocation;
-import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
-import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AExpressionArgument;
 import se.sics.kola.node.ANameArgument;
+import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -51,7 +51,6 @@ public class ArgumentAdapter extends DepthFirstAdapter {
     public void caseAExpressionArgument(AExpressionArgument node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpressionNoName().apply(ea);
-        System.out.println("Error here: " + node.toString());
         invocation.arg(ea.expr);
     }
 }

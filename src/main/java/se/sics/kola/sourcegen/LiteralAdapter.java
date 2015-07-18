@@ -22,7 +22,9 @@ package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
+import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.ABooleanLiteral;
 import se.sics.kola.node.AStringLiteral;
 
 /**
@@ -30,12 +32,24 @@ import se.sics.kola.node.AStringLiteral;
  * @author lkroll
  */
 public class LiteralAdapter extends DepthFirstAdapter {
+
     JExpression expr;
-    
+
     @Override
     public void caseAStringLiteral(AStringLiteral node) {
         String lit = node.getStringLiteral().getText();
-        lit = lit.substring(1, lit.length()-1); // strip quotes
+        lit = lit.substring(1, lit.length() - 1); // strip quotes
         expr = JExpr.lit(lit);
+    }
+
+    @Override
+    public void caseABooleanLiteral(ABooleanLiteral node) {
+        if (node.getBooleanLiteral().getText().equalsIgnoreCase("true")) {
+            expr = JExpr.TRUE;
+        } else if (node.getBooleanLiteral().getText().equalsIgnoreCase("false")) {
+            expr = JExpr.FALSE;
+        } else {
+            Logger.error(node.getBooleanLiteral(), "Not a valid boolean literal: " + node.getBooleanLiteral().getText());
+        }
     }
 }

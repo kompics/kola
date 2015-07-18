@@ -20,32 +20,52 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JStatement;
-import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AExpressionReturnStatement;
 import se.sics.kola.node.AStatementExpression;
+import se.sics.kola.node.AVoidReturnStatement;
+import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
+import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
 
 /**
  *
  * @author lkroll
  */
 public class StatementAdapter extends DepthFirstAdapter {
+
     private final StatementParent parent;
     private final ResolutionContext context;
     JStatement statement;
-    
+
     StatementAdapter(StatementParent parent, ResolutionContext context) {
         this.parent = parent;
         this.context = context;
     }
-    
+
     @Override
     public void caseAStatementExpression(AStatementExpression node) {
         ExpressionAdapter ea = new ExpressionAdapter(parent, context);
         node.getExpressionNoName().apply(ea);
     }
-    
+
+    @Override
+    public void caseAExpressionReturnStatement(AExpressionReturnStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getReturnValue().apply(ea);
+        parent._return(ea.expr);
+    }
+
+    @Override
+    public void caseAVoidReturnStatement(AVoidReturnStatement node) {
+        parent._return();
+    }
+
     public static interface StatementParent extends ExpressionParent {
-        
+
+        public void _return();
+
+        public void _return(JExpression expr);
     }
 }
