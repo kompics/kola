@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JClass;
@@ -30,13 +30,13 @@ import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import static se.sics.kola.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassTypeDeclaration;
 import se.sics.kola.node.AJavaCompilationUnit;
 import se.sics.kola.node.APackageDeclaration;
 import se.sics.kola.node.ASingleImportDeclaration;
 import se.sics.kola.node.Start;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -49,6 +49,14 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
     //Map<String, JClass> imports = new HashMap<>();
     ResolutionContext context;
 
+    public JCodeModel getUnit() {
+        return this.unit;
+    }
+    
+    public JPackage getPackage() {
+        return this.pack;
+    }
+    
     @Override
     public void inStart(Start node) {
         System.out.println("Generating output...");
@@ -74,9 +82,9 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             unit.build(new SingleStreamCodeWriter(out));
             out.writeTo(System.out);
-            unit = null;
-            context = null;
-            pack = null;
+//            unit = null;
+//            context = null;
+//            pack = null;
         } catch (IOException ex) {
             ex.printStackTrace();
         }

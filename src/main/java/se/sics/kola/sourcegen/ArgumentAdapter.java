@@ -18,30 +18,40 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JExpression;
-import se.sics.kola.ExpressionAdapter.JExprParent;
+import com.sun.codemodel.JInvocation;
+import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
+import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionVariableInitializer;
+import se.sics.kola.node.AExpressionArgument;
+import se.sics.kola.node.ANameArgument;
 
 /**
  *
  * @author lkroll
  */
-public class VarInitAdapter extends DepthFirstAdapter {
+public class ArgumentAdapter extends DepthFirstAdapter {
+
+    private final JInvocation invocation;
     private final ResolutionContext context;
-    JExpression expr;
-    
-    VarInitAdapter(ResolutionContext context) {
+
+    ArgumentAdapter(JInvocation invocation, ResolutionContext context) {
+        this.invocation = invocation;
         this.context = context;
     }
     
     @Override
-    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpression().apply(ea);
-        expr = ea.expr;
+    public void caseANameArgument(ANameArgument node) {
+        String name = nameToString(node.getName());
+        invocation.arg(name);
     }
-    //TODO finish initalizer
+    
+    @Override
+    public void caseAExpressionArgument(AExpressionArgument node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpressionNoName().apply(ea);
+        System.out.println("Error here: " + node.toString());
+        invocation.arg(ea.expr);
+    }
 }

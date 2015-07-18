@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
@@ -27,7 +27,8 @@ import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JType;
 import java.util.LinkedList;
-import static se.sics.kola.Util.nameToString;
+import se.sics.kola.Logger;
+import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AArrayInitializer;
 import se.sics.kola.node.AClassInitializerArrayCreationExpression;

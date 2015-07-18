@@ -18,12 +18,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
 import java.util.LinkedList;
-import se.sics.kola.Util.IdWithOptArgs;
-import static se.sics.kola.Util.nameToString;
+import se.sics.kola.Logger;
+import se.sics.kola.sourcegen.Util.IdWithOptArgs;
+import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AGtTypeArguments;
 import se.sics.kola.node.AName;

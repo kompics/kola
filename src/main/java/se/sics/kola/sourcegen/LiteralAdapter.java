@@ -18,40 +18,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JInvocation;
-import se.sics.kola.ExpressionAdapter.JExprParent;
-import static se.sics.kola.Util.nameToString;
+import com.sun.codemodel.JExpr;
+import com.sun.codemodel.JExpression;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionArgument;
-import se.sics.kola.node.ANameArgument;
+import se.sics.kola.node.AStringLiteral;
 
 /**
  *
  * @author lkroll
  */
-public class ArgumentAdapter extends DepthFirstAdapter {
-
-    private final JInvocation invocation;
-    private final ResolutionContext context;
-
-    ArgumentAdapter(JInvocation invocation, ResolutionContext context) {
-        this.invocation = invocation;
-        this.context = context;
-    }
+public class LiteralAdapter extends DepthFirstAdapter {
+    JExpression expr;
     
     @Override
-    public void caseANameArgument(ANameArgument node) {
-        String name = nameToString(node.getName());
-        invocation.arg(name);
-    }
-    
-    @Override
-    public void caseAExpressionArgument(AExpressionArgument node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpressionNoName().apply(ea);
-        System.out.println("Error here: " + node.toString());
-        invocation.arg(ea.expr);
+    public void caseAStringLiteral(AStringLiteral node) {
+        String lit = node.getStringLiteral().getText();
+        lit = lit.substring(1, lit.length()-1); // strip quotes
+        expr = JExpr.lit(lit);
     }
 }

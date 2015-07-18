@@ -18,24 +18,38 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JExpr;
+import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JExpression;
-import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AStringLiteral;
+import com.sun.codemodel.JInvocation;
 
 /**
  *
  * @author lkroll
  */
-public class LiteralAdapter extends DepthFirstAdapter {
-    JExpression expr;
+class JBlockParent implements StatementAdapter.StatementParent {
+
+    private final JBlock block;
     
-    @Override
-    public void caseAStringLiteral(AStringLiteral node) {
-        String lit = node.getStringLiteral().getText();
-        lit = lit.substring(1, lit.length()-1); // strip quotes
-        expr = JExpr.lit(lit);
+    public JBlockParent(JBlock block) {
+        this.block = block;
     }
+
+    @Override
+    public JInvocation invoke(String method) {
+        return block.invoke(method);
+    }
+
+    @Override
+    public void addInvocation(JInvocation invoc) {
+        block.add(invoc);
+    }
+
+    @Override
+    public JInvocation invoke(JExpression lhs, String method) {
+        return block.invoke(lhs, method);
+    }
+
+    
 }

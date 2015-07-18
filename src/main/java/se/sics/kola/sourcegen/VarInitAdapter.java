@@ -18,39 +18,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JClass;
-import java.util.LinkedList;
+import com.sun.codemodel.JExpression;
+import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.ATypeBound;
-import se.sics.kola.node.ATypeParameter;
-import se.sics.kola.node.PInterfaceType;
+import se.sics.kola.node.AExpressionVariableInitializer;
 
 /**
  *
  * @author lkroll
  */
-public class TypeParameterAdapter extends DepthFirstAdapter {
-    private ResolutionContext context;
-    String name;
-    LinkedList<JClass> bounds = new LinkedList<>();
+public class VarInitAdapter extends DepthFirstAdapter {
+    private final ResolutionContext context;
+    JExpression expr;
     
-    TypeParameterAdapter(ResolutionContext context) {
+    VarInitAdapter(ResolutionContext context) {
         this.context = context;
     }
     
     @Override
-    public void caseATypeParameter(ATypeParameter node) {
-        name = node.getIdentifier().getText();
-        
-        ATypeBound bound = (ATypeBound) node.getTypeBound();
-        if (bound != null) {
-            for (PInterfaceType type : bound.getInterfaceType()) {
-                TypeAdapter ta = new TypeAdapter(context);
-                type.apply(ta);
-                bounds.add((JClass)ta.type); // cast will work because we only use interface types
-            }
-        }
+    public void caseAExpressionVariableInitializer(AExpressionVariableInitializer node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpression().apply(ea);
+        expr = ea.expr;
     }
+    //TODO finish initalizer
 }

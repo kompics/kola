@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JCodeModel;
@@ -28,8 +28,8 @@ import com.sun.codemodel.JInvocation;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import se.sics.kola.ExpressionAdapter.ExpressionParent;
-import static se.sics.kola.Util.nameToString;
+import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
+import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.TIdentifier;
 

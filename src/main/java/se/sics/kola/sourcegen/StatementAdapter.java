@@ -18,49 +18,34 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JAnnotationUse;
-import com.sun.codemodel.JClass;
-import static se.sics.kola.Util.nameToString;
+import com.sun.codemodel.JStatement;
+import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AName;
-import se.sics.kola.node.AReferenceTypeNoArguments;
+import se.sics.kola.node.AStatementExpression;
 
 /**
  *
  * @author lkroll
  */
-public class AnnotationParameterAdapter extends DepthFirstAdapter {
-
+public class StatementAdapter extends DepthFirstAdapter {
+    private final StatementParent parent;
     private final ResolutionContext context;
-    private final JAnnotationUse ann;
-    private final String id;
-
-    boolean reference = false;
-
-    AnnotationParameterAdapter(String id, JAnnotationUse ann, ResolutionContext context) {
-        this.id = id;
-        this.ann = ann;
+    JStatement statement;
+    
+    StatementAdapter(StatementParent parent, ResolutionContext context) {
+        this.parent = parent;
         this.context = context;
     }
-
+    
     @Override
-    public void inAReferenceTypeNoArguments(AReferenceTypeNoArguments node) {
-        reference = true;
+    public void caseAStatementExpression(AStatementExpression node) {
+        ExpressionAdapter ea = new ExpressionAdapter(parent, context);
+        node.getExpressionNoName().apply(ea);
     }
-
-    @Override
-    public void inAName(AName node) {
-        String name = nameToString(node);
-        JClass atype = context.imports.get(name);
-        if (atype == null) {
-            atype = context.unit.ref(name);
-        }
-        if (reference) {
-            ann.param(id, atype);
-        } else {
-            Logger.error(node.getIdentifier().element(), "Unsupported annotation type.");
-        }
+    
+    public static interface StatementParent extends ExpressionParent {
+        
     }
 }

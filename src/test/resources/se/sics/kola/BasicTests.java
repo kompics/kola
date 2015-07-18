@@ -1,3 +1,4 @@
+package se.sics.kola;
 /*
  * This file is part of the Kompics component model runtime.
  *
@@ -18,38 +19,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
-
-import com.sun.codemodel.JBlock;
-import com.sun.codemodel.JExpression;
-import com.sun.codemodel.JInvocation;
 
 /**
  *
  * @author lkroll
  */
-class JBlockParent implements StatementAdapter.StatementParent {
-
-    private final JBlock block;
-    
-    public JBlockParent(JBlock block) {
-        this.block = block;
-    }
-
-    @Override
-    public JInvocation invoke(String method) {
-        return block.invoke(method);
-    }
-
-    @Override
-    public void addInvocation(JInvocation invoc) {
-        block.add(invoc);
-    }
-
-    @Override
-    public JInvocation invoke(JExpression lhs, String method) {
-        return block.invoke(lhs, method);
-    }
-
+public class BasicTests {
     
 }

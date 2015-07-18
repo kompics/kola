@@ -18,9 +18,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package se.sics.kola;
+package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JMod;
+import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AAbstractModifier;
 import se.sics.kola.node.AAnnotationModifier;
@@ -39,11 +40,11 @@ import se.sics.kola.node.AVolatileModifier;
  *
  * @author lkroll
  */
-class MethodModifierAdapter extends DepthFirstAdapter {
+class ClassModifierAdapter extends DepthFirstAdapter {
 
     private int mods = 0;
 
-    MethodModifierAdapter() {
+    ClassModifierAdapter() {
     }
 
     public int getMods() {
@@ -97,12 +98,12 @@ class MethodModifierAdapter extends DepthFirstAdapter {
 
     @Override
     public void inASynchronizedModifier(ASynchronizedModifier node) {
-        mods = mods | JMod.SYNCHRONIZED;
+        Logger.error(node.getSynchronizedKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override
     public void inANativeModifier(ANativeModifier node) {
-        mods = mods | JMod.NATIVE;
+        Logger.error(node.getNativeKeyword(), "Modifier not supported here. Ignoring...");
     }
     
     @Override

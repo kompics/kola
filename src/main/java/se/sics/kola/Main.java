@@ -20,15 +20,35 @@
  */
 package se.sics.kola;
 
+import com.google.common.io.Files;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PushbackReader;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import se.sics.kola.lexer.Lexer;
 import se.sics.kola.lexer.LexerException;
 import se.sics.kola.node.Start;
 import se.sics.kola.parser.Parser;
 import se.sics.kola.parser.ParserException;
+import se.sics.kola.sourcegen.JavaSourceGenerator;
 
 /**
  *
@@ -37,17 +57,79 @@ import se.sics.kola.parser.ParserException;
 public class Main {
 
     public static void main(String[] args) {
-        long start_time, stop_time; // times compilation
 
-        if (args.length < 1) {
-            System.out.println("Usage:");
-            System.out.println("java -jar kolac.jar <filename>");
+        Options opts = prepareOptions();
+        HelpFormatter formatter = new HelpFormatter();
+        try {
+            CommandLineParser cliparser = new DefaultParser();
+            CommandLine cmd = cliparser.parse(opts, args);
+            String[] files = cmd.getArgs();
+            long start_time, stop_time; // times compilation
+
+            if (files.length < 1) {
+                formatter.printHelp("Usage: kolac <options> <source files>", opts);
+                System.exit(0);
+            }
+            SourceWriter sw;
+            if (cmd.hasOption("s")) {
+                String outPath = cmd.getOptionValue("s");
+                sw = new SourceWriter(outPath);
+            } else {
+                sw = new SourceWriter();
+            }
+            List<File> sourceFiles = findSources(files);
+            ExecutorService execs = Executors.newCachedThreadPool();
+            start_time = System.currentTimeMillis();
+            Map<File, Future<Start>> futures = new HashMap<>();
+            for (final File f : sourceFiles) {
+                Future<Start> fres = execs.submit(new Callable<Start>() {
+
+                    @Override
+                    public Start call() throws Exception {
+                        return parse(f);
+                    }
+                });
+                futures.put(f, fres);
+            }
+            Map<File, Start> starts = new HashMap<>();
+            for (Entry<File, Future<Start>> e : futures.entrySet()) {
+                Start s = e.getValue().get();
+                starts.put(e.getKey(), s);
+            }
+            stop_time = System.currentTimeMillis();
+            System.out.println("Parsed all files in " + (stop_time - start_time) + "ms.");
+
+            for (Entry<File, Start> e : starts.entrySet()) {
+                System.out.println("Analysing AST for " + e.getKey());
+                Start ast = e.getValue();
+                // print
+                PrintAdapter printer = new PrintAdapter();
+                ast.apply(printer);
+                printer.print();
+                // check program semantics
+                //ast.apply(new SemanticAnalyser());
+                // generate class file
+                JavaSourceGenerator jsg = new JavaSourceGenerator();
+                ast.apply(jsg);
+                sw.writeOut(e.getKey(), jsg);
+            }
+        } catch (ParseException ex) {
+            System.err.println("Invalid commandline options: " + ex.getMessage());
+            formatter.printHelp("Usage: kolac <options> <source files>", opts);
+            System.exit(1);
+        } catch (InterruptedException | ExecutionException ex) {
+            System.err.println("Parser error: " + ex.getMessage());
+            System.exit(1);
+        } catch (IOException ex) {
+            System.err.println("File writer error: " + ex.getMessage());
+            System.exit(1);
         }
+    }
 
-        try (FileReader fr = new FileReader(args[0]);
+    private static Start parse(File f) {
+        try (FileReader fr = new FileReader(f);
                 BufferedReader br = new BufferedReader(fr);
                 PushbackReader pbr = new PushbackReader(br, 1024);) {
-            start_time = System.currentTimeMillis();
 
             // create lexer
             Lexer lexer = new Lexer(pbr);
@@ -56,17 +138,44 @@ public class Main {
             Parser parser = new Parser(lexer);
 
             Start ast = parser.parse();
-
-            // print
-            PrintAdapter printer = new PrintAdapter();
-            ast.apply(printer);
-            printer.print();
-            // check program semantics
-            //ast.apply(new SemanticAnalyser());
-            // generate class file
-            ast.apply(new JavaSourceGenerator());
+            return ast;
         } catch (ParserException | LexerException | IOException e) {
-            System.out.println(e);
+            System.err.println(e.getMessage());
+            e.printStackTrace(System.err);
+            return null;
         }
     }
+
+    private static Options prepareOptions() {
+        Options opts = new Options();
+
+        opts.addOption("s", true, "Specify where to place generated source files");
+        
+        return opts;
+    }
+
+    private static List<File> findSources(String[] files) {
+        List<File> sfiles = new LinkedList<>();
+        Queue<File> todo = new LinkedList<>();
+        for (String path : files) {
+            todo.offer(new File(path));
+        }
+        while(!todo.isEmpty()) {
+            File f = todo.poll();
+            if (f.isDirectory()) {
+                File[] children = f.listFiles();
+                for (File child : children) {
+                    todo.offer(child);
+                }
+            } else {
+                String ext = Files.getFileExtension(f.getAbsolutePath());
+                if (ext.equalsIgnoreCase("java") || ext.equalsIgnoreCase("kola")) {
+                    sfiles.add(f);
+                }
+            }
+        }
+        return sfiles;
+    }
+
+    
 }

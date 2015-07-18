@@ -1,4 +1,4 @@
-/* 
+/*
  * This file is part of the Kompics component model runtime.
  *
  * Copyright (C) 2009 Swedish Institute of Computer Science (SICS) 
@@ -20,20 +20,27 @@
  */
 package se.sics.kola;
 
+import java.io.File;
 import java.io.IOException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import se.sics.kola.sourcegen.JavaSourceGenerator;
 
 /**
  *
  * @author lkroll
  */
-@RunWith(JUnit4.class)
-public class PureJavaTest {
-    @Test
-    public void thisTest() throws IOException {
-        System.out.println(new java.io.File( "." ).getCanonicalPath());
-        Main.main(new String[]{"-s", "target/generated-sources/","src/test/resources/se/sics/kola/BasicTests.java"});
+public class SourceWriter {
+
+    private final File targetPath;
+
+    public SourceWriter(String targetPath) {
+        this.targetPath = new File(targetPath);
+    }
+
+    public SourceWriter() {
+        this(".");
+    }
+
+    public void writeOut(File sourceFile, JavaSourceGenerator jsg) throws IOException {
+        jsg.getUnit().build(targetPath);
     }
 }
