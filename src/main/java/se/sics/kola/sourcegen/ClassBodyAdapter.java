@@ -23,15 +23,17 @@ package se.sics.kola.sourcegen;
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
+import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JType;
+import com.sun.codemodel.JVar;
 import java.util.LinkedList;
 import java.util.List;
 import se.sics.kola.Logger;
-import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AElementValuePair;
 import se.sics.kola.node.AFormalParameter;
+import se.sics.kola.node.ALocalVariableDeclaration;
 import se.sics.kola.node.AMarkerAnnotation;
 import se.sics.kola.node.AMethodDeclaration;
 import se.sics.kola.node.AMethodDeclarator;
@@ -46,6 +48,8 @@ import se.sics.kola.node.AVoidResult;
 import se.sics.kola.node.PElementValuePair;
 import se.sics.kola.node.PModifier;
 import se.sics.kola.node.PTypeParameter;
+import se.sics.kola.node.PVariableDeclarator;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -98,6 +102,27 @@ class ClassBodyAdapter extends DepthFirstAdapter {
         }
         BlockStatementAdapter bsa = new BlockStatementAdapter(context, method.body());
         node.getMethodBody().apply(bsa);
+    }
+
+    @Override
+    public void caseALocalVariableDeclaration(ALocalVariableDeclaration node) {
+        final FieldModifierAdapter fma = new FieldModifierAdapter();
+        for (PModifier mod : node.getModifier()) {
+            mod.apply(fma);
+        }
+        final TypeAdapter ta = new TypeAdapter(context);
+        node.getType().apply(ta);
+        VarDeclAdapter vda = new VarDeclAdapter(ta.type, context, new VarDeclAdapter.Scope() {
+
+            @Override
+            public JVar declare(JType type, String name, JExpression init) {
+                return clazz.field(fma.getMods(), type, name, init);
+            }
+
+        });
+        for (PVariableDeclarator decl : node.getVariableDeclarator()) {
+            decl.apply(vda);
+        }
     }
 
     class MethodAnnotationAdapter extends DepthFirstAdapter {
@@ -163,7 +188,7 @@ class ClassBodyAdapter extends DepthFirstAdapter {
         public void caseAName(AName aname) {
             String name = nameToString(aname);
             try {
-                JClass c = context.resolve(name);
+                JClass c = context.resolveType(name);
                 method._throws(c);
             } catch (ClassNotFoundException ex) {
                 Logger.error(aname.getIdentifier().getFirst(), "Could not resolve type: " + name);

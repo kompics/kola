@@ -28,10 +28,12 @@ import com.sun.codemodel.JInvocation;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
-import static se.sics.kola.sourcegen.Util.nameToString;
+import se.sics.kola.Logger;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.TIdentifier;
+import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
+import static se.sics.kola.sourcegen.Util.nameToString;
+import se.sics.kola.util.Either;
 
 /**
  *
@@ -42,47 +44,111 @@ class ResolutionContext {
     JCodeModel unit;
     Map<String, JClass> imports = new HashMap<>();
 
-    JClass resolve(String name) throws ClassNotFoundException {
+    JClass resolveType(String name) throws ClassNotFoundException {
         JClass jc = imports.get(name);
         if (jc == null) {
-            jc = unit.ref(name);
+            if (name.contains(".")) { // needs to be fully qualified
+                jc = unit.ref(name);
+            } else if (name.equals("System")) {
+                jc = unit.directClass("System");
+            } else {
+                throw new ClassNotFoundException("Could not find class of type: " + name);
+            }
         }
         return jc;
     }
 
-    
-    //TODO rewrite this as a recursive function that allows JClass or JFieldRef at every step
     JInvocation resolveInvocation(AName name, ExpressionParent parent) {
         if (name.getIdentifier().size() == 1) {
             return parent.invoke(nameToString(name));
         } else {
             LinkedList<TIdentifier> ids = name.getIdentifier();
-            TIdentifier firstId = ids.pollFirst();
-            JFieldRef field = null;
-            try {
-                JClass jc = resolve(firstId.getText());
-                TIdentifier secondId = ids.pollFirst();
-                if (ids.isEmpty()) {
-                    JInvocation ji = jc.staticInvoke(secondId.getText());
-                    parent.addInvocation(ji);
-                    return ji;
-                } else {
-                    field = jc.staticRef(secondId.getText());
-                }
-            } catch (ClassNotFoundException ex) {
-                field = JExpr.ref(firstId.getText());
-            }
-            while (!ids.isEmpty()) {
-                TIdentifier id = ids.pollFirst();
-                if (ids.isEmpty()) {
-                    JInvocation ji = field.invoke(id.getText());
-                    parent.addInvocation(ji);
-                    return ji;
-                } else {
-                    field = field.ref(id.getText());
-                }
+            TIdentifier methodId = ids.pollLast();
+            Either<JClass, JFieldRef> e = resolve(ids);
+            if (e.isLeft()) {
+                JInvocation ji = e.getLeft().staticInvoke(methodId.getText());
+                parent.addInvocation(ji);
+                return ji;
+            } else {
+                JInvocation ji = e.getRight().invoke(methodId.getText());
+                parent.addInvocation(ji);
+                return ji;
             }
         }
-        return null;
+    }
+
+    JFieldRef resolveField(AName aName) {
+        LinkedList<TIdentifier> ids = aName.getIdentifier();
+        Either<JClass, JFieldRef> e = resolve(ids);
+        if (e.isRight()) {
+            return e.getRight();
+        } else {
+            Logger.error(ids.peekFirst(), "Expected a field reference here, not a class: " + e.getLeft().fullName());
+            return null;
+        }
+    }
+
+    Either<JClass, JFieldRef> resolve(LinkedList<TIdentifier> ids) {
+        LinkedList<TIdentifier> prefix = new LinkedList<>();
+        JClass jc = null;
+        while (!ids.isEmpty()) {
+            prefix.offer(ids.pollFirst());
+            try {
+                jc = resolveType(nameToString(prefix));
+                break;
+            } catch (ClassNotFoundException ex) {
+                // ignore
+            }
+        }
+
+        if (jc == null) {
+            // restore ids
+            while (!prefix.isEmpty()) {
+                ids.addFirst(prefix.pollLast());
+            }
+            TIdentifier firstId = ids.pollFirst();
+            JFieldRef field = JExpr.ref(firstId.getText());
+            Either<JClass, JFieldRef> ret = resolve(ids, field);
+            ids.addFirst(firstId);
+            return ret;
+        } else {
+            Either<JClass, JFieldRef> ret = resolve(ids, jc);
+            // restore ids
+            while (!prefix.isEmpty()) {
+                ids.addFirst(prefix.pollLast());
+            }
+            return ret;
+        }
+    }
+
+    private Either<JClass, JFieldRef> resolve(LinkedList<TIdentifier> ids, JFieldRef infield) {
+        if (ids.isEmpty()) {
+            return Either.right(infield);
+        }
+        TIdentifier firstId = ids.pollFirst();
+        // Note this could also be instance class reference, but there's no way to reflect that here...at least not without resolving the JVar I guess
+        JFieldRef field = infield.ref(firstId.getText());
+        Either<JClass, JFieldRef> ret = resolve(ids, field);
+        ids.addFirst(firstId);
+        return ret;
+    }
+
+    private Either<JClass, JFieldRef> resolve(LinkedList<TIdentifier> ids, JClass inClass) {
+        if (ids.isEmpty()) {
+            return Either.left(inClass);
+        }
+        TIdentifier firstId = ids.pollFirst();
+        String cName = inClass.fullName() + "." + firstId.getText();
+//        try {
+//            JClass jc = resolveType(cName);
+//            Either<JClass, JFieldRef> ret = resolve(ids, jc);
+//            ids.addFirst(firstId);
+//            return ret;
+//        } catch (ClassNotFoundException ex) {
+            JFieldRef field = inClass.staticRef(firstId.getText());
+            Either<JClass, JFieldRef> ret = resolve(ids, field);
+            ids.addFirst(firstId);
+            return ret;
+//        }
     }
 }

@@ -34,13 +34,17 @@ import se.sics.kola.node.TIdentifier;
  *
  * @author lkroll
  */
-class Util {
+public class Util {
 
-    static String nameToString(PName pname) {
+    public static String nameToString(PName pname) {
         AName name = (AName) pname;
+        return nameToString(name.getIdentifier());
+    }
+    
+    public static String nameToString(LinkedList<TIdentifier> ids) {
         StringBuilder sb = new StringBuilder();
 
-        for (Iterator<TIdentifier> it = name.getIdentifier().iterator(); it.hasNext();) {
+        for (Iterator<TIdentifier> it = ids.iterator(); it.hasNext();) {
             TIdentifier id = it.next();
             sb.append(id.getText());
             if (it.hasNext()) {
@@ -52,7 +56,7 @@ class Util {
 
     static LinkedList<IdWithOptArgs> shiftTDS(ATypeDeclSpecifier spec, ResolutionContext context) {
         AName firstName = (AName) spec.getName();
-        
+
         LinkedList<IdWithOptArgs> list = new LinkedList<>();
         for (TIdentifier id : firstName.getIdentifier()) {
             IdWithOptArgs iwoa = new IdWithOptArgs();
@@ -80,4 +84,5 @@ class Util {
         TIdentifier id;
         PTypeArguments args;
     }
+
 }

@@ -21,51 +21,32 @@
 package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JAssignmentTarget;
-import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JExpression;
-import com.sun.codemodel.JInvocation;
+import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AAssignAssignmentOperator;
+import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 
 /**
  *
  * @author lkroll
  */
-class JBlockParent implements StatementAdapter.StatementParent {
-
-    private final JBlock block;
-
-    public JBlockParent(JBlock block) {
-        this.block = block;
+public class AssignOpAdapter extends DepthFirstAdapter {
+    
+    private final ExpressionParent parent;
+    private final ResolutionContext context;
+    private final JAssignmentTarget lhs;
+    private final JExpression rhs;
+    JExpression expr;
+    
+    AssignOpAdapter(ExpressionParent parent, ResolutionContext context, JAssignmentTarget lhs, JExpression rhs) {
+        this.parent = parent;
+        this.context = context;
+        this.lhs = lhs;
+        this.rhs = rhs;
     }
-
+    
     @Override
-    public JInvocation invoke(String method) {
-        return block.invoke(method);
+    public void caseAAssignAssignmentOperator(AAssignAssignmentOperator node) {
+        expr = parent.assign(lhs, rhs);
     }
-
-    @Override
-    public void addInvocation(JInvocation invoc) {
-        block.add(invoc);
-    }
-
-    @Override
-    public JInvocation invoke(JExpression lhs, String method) {
-        return block.invoke(lhs, method);
-    }
-
-    @Override
-    public void _return() {
-        block._return();
-    }
-
-    @Override
-    public void _return(JExpression expr) {
-        block._return(expr);
-    }
-
-    @Override
-    public JExpression assign(JAssignmentTarget lhs, JExpression rhs) {
-        block.assign(lhs, rhs);
-        return null;
-    }
-
 }
