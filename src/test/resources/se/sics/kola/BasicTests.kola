@@ -23,11 +23,20 @@ import junit.framework.Assert;
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+public class BasicParent {
+    final int field = 28;
+    static final int sfield = 24;
+}
+
 /**
  *
  * @author lkroll
  */
-public class BasicTests {
+public class BasicTests extends BasicParent {
+    
+    private final int field = 42;
+    private final int[] array = new int[] {1, 2, 3};
+    
     public boolean test() {
         System.out.println("Running language feature tests...");
         integerArithmeticsTest();
@@ -36,6 +45,7 @@ public class BasicTests {
         floatingArithmeticsTests();
         assignmentTests();
         relationTests();
+        accessTests();
         return true;
     }
     
@@ -254,5 +264,23 @@ public class BasicTests {
         Assert.assertEquals(false, z);
         z = this instanceof Object;
         Assert.assertEquals(true, z);
+    }
+    
+    private void accessTests() {
+        System.out.println("Running access tests...");
+        Assert.assertEquals(42, field);
+        Assert.assertEquals(42, this.field);
+        Assert.assertEquals(28, super.field);
+        Assert.assertEquals(24, BasicParent.sfield);
+        Assert.assertEquals(42, BasicTests.this.field);
+        Assert.assertEquals(42, (BasicTests.this).field);
+        Class v = void.class;
+        Assert.assertEquals("java.lang.Void", v.getName());
+        Assert.assertEquals(3, array[2]);
+        Object o = this;
+        BasicTests t = (BasicTests) o;
+        int[] ia = new int[1];
+        ia[0] = 12;
+        Assert.assertEquals(12, ia[0]);
     }
 }

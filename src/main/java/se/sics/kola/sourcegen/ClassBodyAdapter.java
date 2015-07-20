@@ -20,8 +20,10 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JClass;
+import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JMethod;
@@ -31,9 +33,10 @@ import java.util.LinkedList;
 import java.util.List;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AClassClassMemberDeclaration;
 import se.sics.kola.node.AElementValuePair;
+import se.sics.kola.node.AFieldDeclaration;
 import se.sics.kola.node.AFormalParameter;
-import se.sics.kola.node.ALocalVariableDeclaration;
 import se.sics.kola.node.AMarkerAnnotation;
 import se.sics.kola.node.AMethodDeclaration;
 import se.sics.kola.node.AMethodDeclarator;
@@ -105,7 +108,7 @@ class ClassBodyAdapter extends DepthFirstAdapter {
     }
 
     @Override
-    public void caseALocalVariableDeclaration(ALocalVariableDeclaration node) {
+    public void caseAFieldDeclaration(AFieldDeclaration node) {
         final FieldModifierAdapter fma = new FieldModifierAdapter();
         for (PModifier mod : node.getModifier()) {
             mod.apply(fma);
@@ -123,6 +126,18 @@ class ClassBodyAdapter extends DepthFirstAdapter {
         for (PVariableDeclarator decl : node.getVariableDeclarator()) {
             decl.apply(vda);
         }
+    }
+    
+    @Override
+    public void caseAClassClassMemberDeclaration(AClassClassMemberDeclaration node) {
+        ClassAdapter ca = new ClassAdapter(context, new ClassAdapter.ClassParent() {
+
+            @Override
+            public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
+                return clazz._class(mods, name, classTypeVal);
+            }
+        });
+        node.apply(ca);
     }
 
     class MethodAnnotationAdapter extends DepthFirstAdapter {

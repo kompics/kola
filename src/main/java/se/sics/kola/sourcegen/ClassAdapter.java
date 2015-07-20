@@ -26,7 +26,7 @@ import com.sun.codemodel.JClass;
 import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JDefinedClass;
 import se.sics.kola.Logger;
-import static se.sics.kola.sourcegen.Util.nameToString;
+import se.sics.kola.PrintAdapter;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AElementValuePair;
 import se.sics.kola.node.AMarkerAnnotation;
@@ -34,22 +34,25 @@ import se.sics.kola.node.ANormalAnnotation;
 import se.sics.kola.node.ANormalClassDeclaration;
 import se.sics.kola.node.ASingleElementAnnotation;
 import se.sics.kola.node.PElementValuePair;
+import se.sics.kola.node.PInterfaceType;
 import se.sics.kola.node.PModifier;
+import se.sics.kola.node.PTypeParameter;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
  * @author lkroll
  */
 public class ClassAdapter extends DepthFirstAdapter {
-    
+
     private final ClassParent parent;
     private final ResolutionContext context;
-    
+
     ClassAdapter(ResolutionContext context, ClassParent parent) {
         this.context = context;
         this.parent = parent;
     }
-    
+
     @Override
     public void caseANormalClassDeclaration(ANormalClassDeclaration node) {
         try {
@@ -59,10 +62,39 @@ public class ClassAdapter extends DepthFirstAdapter {
             }
             int mods = modap.getMods();
             JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
+            context.declaredClasses.put(node.getIdentifier().getText(), c);
             for (PModifier m : node.getModifier()) {
                 System.out.println("Mod: " + m.toString());
                 ClassAnnotationAdapter annap = new ClassAnnotationAdapter(c);
                 m.apply(annap);
+            }
+            for (PTypeParameter ptp : node.getTypeParameter()) {
+                TypeParameterAdapter tpa = new TypeParameterAdapter(context);
+                ptp.apply(tpa);
+                if (tpa.bounds.isEmpty()) {
+                    c.generify(tpa.name);
+                } else {
+                    for (JClass bound : tpa.bounds) {
+                        c.generify(tpa.name, bound);
+                    }
+                }
+                context.generics.add(tpa.name); //TODO remove all the added parameters again
+            }
+            if (node.getParent() != null) {
+                TypeAdapter ta = new TypeAdapter(context);
+                node.getParent().apply(ta);
+                if (ta.type == null) {
+                    PrintAdapter pa = new PrintAdapter();
+                    node.getParent().apply(pa);
+                    Logger.error("Could not find type for subtree: \n" + pa.toString());
+                    
+                }
+                c._extends(ta.type.boxify());
+            }
+            for (PInterfaceType ift : node.getInterfaceType()) {
+                TypeAdapter ta = new TypeAdapter(context);
+                ift.apply(ta);
+                c._implements(ta.type.boxify());
             }
             System.out.println("Creating class: " + c.fullName());
             ClassBodyAdapter cba = new ClassBodyAdapter(context, c);
@@ -71,7 +103,7 @@ public class ClassAdapter extends DepthFirstAdapter {
             throw new RuntimeException(ex);
         }
     }
-    
+
     class ClassAnnotationAdapter extends DepthFirstAdapter {
 
         private final JDefinedClass clazz;
@@ -122,8 +154,9 @@ public class ClassAdapter extends DepthFirstAdapter {
             }
         }
     }
-    
+
     public static interface ClassParent {
-        public JDefinedClass _class( int mods, String name, ClassType classTypeVal ) throws JClassAlreadyExistsException;
+
+        public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException;
     }
 }

@@ -86,7 +86,7 @@ public class LHSAdapter extends DepthFirstAdapter {
         ExpressionAdapter eaArray = new ExpressionAdapter(new JExprParent(), context);
         node.getArray().apply(eaArray);
         ExpressionAdapter eaField = new ExpressionAdapter(new JExprParent(), context);
-        node.getArray().apply(eaField);
+        node.getField().apply(eaField);
         expr = JExpr.component(eaArray.expr, eaField.expr);
     }
 }

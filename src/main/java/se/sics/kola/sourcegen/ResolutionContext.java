@@ -22,12 +22,15 @@ package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JCodeModel;
+import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JFieldRef;
 import com.sun.codemodel.JInvocation;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 import se.sics.kola.Logger;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.TIdentifier;
@@ -43,8 +46,17 @@ class ResolutionContext {
 
     JCodeModel unit;
     Map<String, JClass> imports = new HashMap<>();
+    Map<String, JDefinedClass> declaredClasses = new HashMap<>();
+    Set<String> generics = new HashSet<String>();
 
     JClass resolveType(String name) throws ClassNotFoundException {
+        if (generics.contains(name)) {
+            return unit.directClass(name);
+        }
+        JDefinedClass jcd = declaredClasses.get(name);
+        if (jcd != null) {
+            return jcd;
+        }
         JClass jc = imports.get(name);
         if (jc == null) {
             if (name.contains(".")) { // needs to be fully qualified
@@ -53,7 +65,9 @@ class ResolutionContext {
                 jc = unit.directClass("System");
             } else if (name.equals("Object")) {
                 jc = unit.directClass("Object");
-            } else {
+            } else if (name.equals("Class")) {
+                jc = unit.directClass("Class");
+            }else {
                 throw new ClassNotFoundException("Could not find class of type: " + name);
             }
         }
@@ -147,10 +161,10 @@ class ResolutionContext {
 //            ids.addFirst(firstId);
 //            return ret;
 //        } catch (ClassNotFoundException ex) {
-            JFieldRef field = inClass.staticRef(firstId.getText());
-            Either<JClass, JFieldRef> ret = resolve(ids, field);
-            ids.addFirst(firstId);
-            return ret;
+        JFieldRef field = inClass.staticRef(firstId.getText());
+        Either<JClass, JFieldRef> ret = resolve(ids, field);
+        ids.addFirst(firstId);
+        return ret;
 //        }
     }
 }
