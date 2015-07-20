@@ -25,6 +25,7 @@ import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
+import com.sun.codemodel.JExpressionStatement;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JOp;
 import com.sun.codemodel.JType;
@@ -41,15 +42,23 @@ import se.sics.kola.node.ADiamondTypeArgumentsOrDiamond;
 import se.sics.kola.node.ADivExpressionNoName;
 import se.sics.kola.node.AEmarkExpressionNoName;
 import se.sics.kola.node.AEorExpressionNoName;
+import se.sics.kola.node.AEqExpressionNoName;
+import se.sics.kola.node.AGtExpressionNoName;
+import se.sics.kola.node.AGteqExpressionNoName;
+import se.sics.kola.node.AInstanceofExpressionNoName;
 import se.sics.kola.node.AIorExpressionNoName;
 import se.sics.kola.node.ALiteralExpressionNoName;
+import se.sics.kola.node.ALtExpressionNoName;
+import se.sics.kola.node.ALteqExpressionNoName;
 import se.sics.kola.node.AMethodMethodInvocation;
 import se.sics.kola.node.AMinusExpressionNoName;
 import se.sics.kola.node.AModExpressionNoName;
 import se.sics.kola.node.AMulExpressionNoName;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.ANameExpression;
+import se.sics.kola.node.ANeqExpressionNoName;
 import se.sics.kola.node.ANewClassInstanceCreationExpression;
+import se.sics.kola.node.APcastExpressionNoName;
 import se.sics.kola.node.APlusExpressionNoName;
 import se.sics.kola.node.APostDecrExpressionNoName;
 import se.sics.kola.node.APostIncExpressionNoName;
@@ -57,8 +66,10 @@ import se.sics.kola.node.APreDecrExpressionNoName;
 import se.sics.kola.node.APreIncExpressionNoName;
 import se.sics.kola.node.APrimaryMethodInvocation;
 import se.sics.kola.node.AQmarkExpressionNoName;
+import se.sics.kola.node.ARcastExpressionNoName;
 import se.sics.kola.node.AShlExpressionNoName;
 import se.sics.kola.node.AShrExpressionNoName;
+import se.sics.kola.node.AThisExpressionNoName;
 import se.sics.kola.node.ATildeExpressionNoName;
 import se.sics.kola.node.ATypeArgumentsTypeArgumentsOrDiamond;
 import se.sics.kola.node.ATypeDeclSpecifier;
@@ -373,6 +384,87 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     }
     
     @Override
+    public void caseAPcastExpressionNoName(APcastExpressionNoName node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpression().apply(ea);
+        TypeAdapter ta = new TypeAdapter(context);
+        node.getTarget().apply(ta);
+        expr = JExpr.cast(ta.type, ea.expr);
+    }
+    
+    @Override
+    public void caseARcastExpressionNoName(ARcastExpressionNoName node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpression().apply(ea);
+        TypeAdapter ta = new TypeAdapter(context);
+        node.getTarget().apply(ta);
+        expr = JExpr.cast(ta.type, ea.expr);
+    }
+    
+    @Override
+    public void caseAEqExpressionNoName(AEqExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.eq(eaRight.expr);
+    }
+    
+    @Override
+    public void caseANeqExpressionNoName(ANeqExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.ne(eaRight.expr);
+    }
+    
+    @Override
+    public void caseALtExpressionNoName(ALtExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.lt(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAGtExpressionNoName(AGtExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.gt(eaRight.expr);
+    }
+    
+    @Override
+    public void caseALteqExpressionNoName(ALteqExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.lte(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAGteqExpressionNoName(AGteqExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.gte(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAInstanceofExpressionNoName(AInstanceofExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        TypeAdapter ta = new TypeAdapter(context);
+        node.getRight().apply(ta);
+        expr = eaLeft.expr._instanceof(ta.type);
+    }
+    
+    @Override
     public void caseANameExpression(ANameExpression node) {
         expr = context.resolveField((AName) node.getName());
     }
@@ -382,6 +474,11 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         LiteralAdapter la = new LiteralAdapter();
         node.getLiteral().apply(la);
         expr = la.expr;
+    }
+    
+    @Override
+    public void caseAThisExpressionNoName(AThisExpressionNoName node) {
+        expr = JExpr._this();
     }
     
     private class TypeDiamondAdapter extends DepthFirstAdapter {
@@ -412,7 +509,9 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         
         public void addInvocation(JInvocation invoc);
         
-        public JExpression assign(JAssignmentTarget lhs, JExpression rhs);
+        public void addStatement(JExpressionStatement stmt);
+        
+        public JExpressionStatement assign(JAssignmentTarget lhs, JExpression rhs);
     }
     
     public static class JExprParent implements ExpressionParent {
@@ -433,8 +532,14 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         }
         
         @Override
-        public JExpression assign(JAssignmentTarget lhs, JExpression rhs) {
+        public JExpressionStatement assign(JAssignmentTarget lhs, JExpression rhs) {
             return JExpr.assign(lhs, rhs);
+        }
+        
+
+        @Override
+        public void addStatement(JExpressionStatement stmt) {
+            // ignore
         }
         
     }

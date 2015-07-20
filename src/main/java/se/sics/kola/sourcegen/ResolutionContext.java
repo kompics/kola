@@ -51,6 +51,8 @@ class ResolutionContext {
                 jc = unit.ref(name);
             } else if (name.equals("System")) {
                 jc = unit.directClass("System");
+            } else if (name.equals("Object")) {
+                jc = unit.directClass("Object");
             } else {
                 throw new ClassNotFoundException("Could not find class of type: " + name);
             }

@@ -25,6 +25,7 @@ import com.sun.codemodel.JExpression;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ABooleanLiteral;
+import se.sics.kola.node.AFloatingPointLiteral;
 import se.sics.kola.node.AIntegerLiteral;
 import se.sics.kola.node.AStringLiteral;
 
@@ -81,5 +82,26 @@ public class LiteralAdapter extends DepthFirstAdapter {
             expr = JExpr.lit(i);
         }
 
+    }
+
+    @Override
+    public void caseAFloatingPointLiteral(AFloatingPointLiteral node) {
+        String literal = node.getFloatingPointLiteral().getText().replace("_", "");
+        char suffix = literal.charAt(literal.length()-1);
+        switch (suffix) {
+            case 'F':
+            case 'f':
+                literal = literal.substring(0, literal.length() - 1);
+                float f = Float.parseFloat(literal);
+                expr = JExpr.lit(f);
+                break;
+            case 'D':
+            case 'd':
+                literal = literal.substring(0, literal.length() - 1);
+            default:
+                double d = Double.parseDouble(literal);
+                expr = JExpr.lit(d);
+                break;
+        }
     }
 }

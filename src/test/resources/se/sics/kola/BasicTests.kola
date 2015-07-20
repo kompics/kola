@@ -33,6 +33,9 @@ public class BasicTests {
         integerArithmeticsTest();
         bitwiseTests();
         booleanTests();
+        floatingArithmeticsTests();
+        assignmentTests();
+        relationTests();
         return true;
     }
     
@@ -78,6 +81,9 @@ public class BasicTests {
         y = --x;
         Assert.assertEquals(4, x);
         Assert.assertEquals(4, y);
+        long l = 1;
+        x = 1;
+        Assert.assertEquals((long)x, l);
     }
     
     private void bitwiseTests() {
@@ -127,5 +133,126 @@ public class BasicTests {
         y = false;
         z = x ? y : true;
         Assert.assertEquals(false, z);
+    }
+    
+    private void floatingArithmeticsTests() {
+        System.out.println("Running floating arithmetic tests...");
+        double x, y, z;
+        x = 5.0;
+        y = -x;
+        Assert.assertEquals(-5.0, y);
+        x = 5.0;
+        y = 3.0;
+        z = x+y;
+        Assert.assertEquals(8.0, z);
+        x = 5.0;
+        y = 3.0;
+        z = x-y;
+        Assert.assertEquals(2.0, z);
+        x = 5.0;
+        y = 3.0;
+        z = x*y;
+        Assert.assertEquals(15.0, z);
+        x = 6.0;
+        y = 3.0;
+        z = x/y;
+        Assert.assertEquals(2.0, z);
+        x = 5.0;
+        y = 3.0;
+        z = x%y;
+        Assert.assertEquals(2.0, z);
+        x = 5.0;
+        y = x++;
+        Assert.assertEquals(6.0, x);
+        Assert.assertEquals(5.0, y);
+        x = 5.0;
+        y = x--;
+        Assert.assertEquals(4.0, x);
+        Assert.assertEquals(5.0, y);
+        x = 5.0;
+        y = ++x;
+        Assert.assertEquals(6.0, x);
+        Assert.assertEquals(6.0, y);
+        x = 5.0;
+        y = --x;
+        Assert.assertEquals(4.0, x);
+        Assert.assertEquals(4.0, y);
+        float f = 1.0f;
+        x = 1.0;
+        Assert.assertEquals(x, (double)f);
+    }
+    
+    private void assignmentTests() {
+        System.out.println("Running assignment tests...");
+        int x, y;
+        x = 1;
+        y = x;
+        Assert.assertEquals(1, y);
+        x = 1;
+        y = 2;
+        y += x;
+        Assert.assertEquals(3, y);
+        x = 1;
+        y = 2;
+        y -= x;
+        Assert.assertEquals(1, y);
+        x = 3;
+        y = 5;
+        y *= x;
+        Assert.assertEquals(15, y);
+        x = 3;
+        y = 6;
+        y /= x;
+        Assert.assertEquals(2, y);
+        x = 3;
+        y = 5;
+        y %= x;
+        Assert.assertEquals(2, y);
+        x = 1;
+        y = 8;
+        y >>>= x;
+        Assert.assertEquals(4, y);
+        x = 1;
+        y = 8;
+        y <<= x;
+        Assert.assertEquals(16, y);
+        x = 1;
+        y = -1;
+        y >>= x;
+        Assert.assertEquals(-1, y);
+        x = 12;
+        y = 8;
+        y &= x;
+        Assert.assertEquals(8, y);
+        x = 12;
+        y = 8;
+        y ^= x;
+        Assert.assertEquals(4, y);
+        x = 4;
+        y = 8;
+        y |= x;
+        Assert.assertEquals(12, y);
+    }
+    
+    private void relationTests() {
+        System.out.println("Running relation tests...");
+        int x, y;
+        boolean z;
+        x = 1;
+        y = 2;
+        z = x == y;
+        Assert.assertEquals(false, z);
+        z = x != y;
+        Assert.assertEquals(true, z);
+        z = x < y;
+        Assert.assertEquals(true, z);
+        z = x > y;
+        Assert.assertEquals(false, z);
+        z = x <= y;
+        Assert.assertEquals(true, z);
+        z = x >= y;
+        Assert.assertEquals(false, z);
+        z = this instanceof Object;
+        Assert.assertEquals(true, z);
     }
 }

@@ -27,15 +27,22 @@ import se.sics.kola.Logger;
 import se.sics.kola.sourcegen.Util.IdWithOptArgs;
 import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.ABooleanPrimitiveType;
+import se.sics.kola.node.AByteIntegralType;
+import se.sics.kola.node.ACharIntegralType;
 import se.sics.kola.node.AClassArrayType;
 import se.sics.kola.node.AClassArrayTypeNoArguments;
 import se.sics.kola.node.AClassOrInterfaceType;
 import se.sics.kola.node.AClassOrInterfaceTypeNoArguments;
+import se.sics.kola.node.ADoubleFloatingPointType;
+import se.sics.kola.node.AFloatFloatingPointType;
+import se.sics.kola.node.AIntIntegralType;
 import se.sics.kola.node.AInterfaceType;
+import se.sics.kola.node.ALongIntegralType;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.APrimitiveArrayType;
 import se.sics.kola.node.APrimitiveArrayTypeNoArguments;
-import se.sics.kola.node.APrimitiveType;
+import se.sics.kola.node.AShortIntegralType;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.PTypeArguments;
 
@@ -53,12 +60,43 @@ class TypeAdapter extends DepthFirstAdapter {
     }
 
     @Override
-    public void caseAPrimitiveType(APrimitiveType node) {
-        try {
-            type = context.unit.parseType(node.toString());
-        } catch (ClassNotFoundException ex) {
-            Logger.error("Couldn't find primitive type: " + node.toString());
-        }
+    public void caseABooleanPrimitiveType(ABooleanPrimitiveType node) {
+        type = context.unit.BOOLEAN;
+    }
+    
+    @Override
+    public void caseAByteIntegralType(AByteIntegralType node) {
+        type = context.unit.BYTE;
+    }
+    
+    @Override
+    public void caseAShortIntegralType(AShortIntegralType node) {
+        type = context.unit.SHORT;
+    }
+    
+    @Override
+    public void caseAIntIntegralType(AIntIntegralType node) {
+        type = context.unit.INT;
+    }
+    
+    @Override
+    public void caseALongIntegralType(ALongIntegralType node) {
+        type = context.unit.LONG;
+    }
+    
+    @Override
+    public void caseACharIntegralType(ACharIntegralType node) {
+        type = context.unit.CHAR;
+    }
+    
+    @Override
+    public void caseAFloatFloatingPointType(AFloatFloatingPointType node) {
+        type = context.unit.FLOAT;
+    }
+    
+    @Override
+    public void caseADoubleFloatingPointType(ADoubleFloatingPointType node) {
+        type = context.unit.DOUBLE;
     }
 
     @Override

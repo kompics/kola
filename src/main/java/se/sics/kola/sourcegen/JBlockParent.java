@@ -23,6 +23,7 @@ package se.sics.kola.sourcegen;
 import com.sun.codemodel.JAssignmentTarget;
 import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JExpression;
+import com.sun.codemodel.JExpressionStatement;
 import com.sun.codemodel.JInvocation;
 
 /**
@@ -63,9 +64,14 @@ class JBlockParent implements StatementAdapter.StatementParent {
     }
 
     @Override
-    public JExpression assign(JAssignmentTarget lhs, JExpression rhs) {
+    public JExpressionStatement assign(JAssignmentTarget lhs, JExpression rhs) {
         block.assign(lhs, rhs);
         return null;
+    }
+
+    @Override
+    public void addStatement(JExpressionStatement stmt) {
+        block.add(stmt);
     }
 
 }
