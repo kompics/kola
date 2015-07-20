@@ -26,15 +26,22 @@ import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JInvocation;
+import com.sun.codemodel.JOp;
 import com.sun.codemodel.JType;
 import java.util.LinkedList;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.AAndExpressionNoName;
 import se.sics.kola.node.AArrayInitializer;
 import se.sics.kola.node.AAssignmentExpressionNoName;
+import se.sics.kola.node.ACandExpressionNoName;
 import se.sics.kola.node.AClassInitializerArrayCreationExpression;
+import se.sics.kola.node.ACorExpressionNoName;
 import se.sics.kola.node.ADiamondTypeArgumentsOrDiamond;
 import se.sics.kola.node.ADivExpressionNoName;
+import se.sics.kola.node.AEmarkExpressionNoName;
+import se.sics.kola.node.AEorExpressionNoName;
+import se.sics.kola.node.AIorExpressionNoName;
 import se.sics.kola.node.ALiteralExpressionNoName;
 import se.sics.kola.node.AMethodMethodInvocation;
 import se.sics.kola.node.AMinusExpressionNoName;
@@ -49,9 +56,14 @@ import se.sics.kola.node.APostIncExpressionNoName;
 import se.sics.kola.node.APreDecrExpressionNoName;
 import se.sics.kola.node.APreIncExpressionNoName;
 import se.sics.kola.node.APrimaryMethodInvocation;
+import se.sics.kola.node.AQmarkExpressionNoName;
+import se.sics.kola.node.AShlExpressionNoName;
+import se.sics.kola.node.AShrExpressionNoName;
+import se.sics.kola.node.ATildeExpressionNoName;
 import se.sics.kola.node.ATypeArgumentsTypeArgumentsOrDiamond;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.AUminusExpressionNoName;
+import se.sics.kola.node.AUshrExpressionNoName;
 import se.sics.kola.node.PArgument;
 import se.sics.kola.node.PVariableInitializer;
 import static se.sics.kola.sourcegen.Util.nameToString;
@@ -261,6 +273,103 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpression().apply(ea);
         expr = ea.expr.predecr();
+    }
+    
+    @Override
+    public void caseAShrExpressionNoName(AShrExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.shr(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAShlExpressionNoName(AShlExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.shl(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAUshrExpressionNoName(AUshrExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.shrz(eaRight.expr);
+    }
+    
+     @Override
+    public void caseATildeExpressionNoName(ATildeExpressionNoName node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpression().apply(ea);
+        expr = ea.expr.complement();
+    }
+    
+     @Override
+    public void caseAEmarkExpressionNoName(AEmarkExpressionNoName node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getExpression().apply(ea);
+        expr = ea.expr.not();
+    }
+    
+    @Override
+    public void caseACandExpressionNoName(ACandExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.cand(eaRight.expr);
+    }
+    
+    @Override
+    public void caseACorExpressionNoName(ACorExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.cor(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAIorExpressionNoName(AIorExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.bor(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAEorExpressionNoName(AEorExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.xor(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAAndExpressionNoName(AAndExpressionNoName node) {
+        ExpressionAdapter eaLeft = new ExpressionAdapter(new JExprParent(), context);
+        node.getLeft().apply(eaLeft);
+        ExpressionAdapter eaRight = new ExpressionAdapter(new JExprParent(), context);
+        node.getRight().apply(eaRight);
+        expr = eaLeft.expr.band(eaRight.expr);
+    }
+    
+    @Override
+    public void caseAQmarkExpressionNoName(AQmarkExpressionNoName node) {
+        ExpressionAdapter eaCond = new ExpressionAdapter(new JExprParent(), context);
+        node.getCond().apply(eaCond);
+        ExpressionAdapter eaTrue = new ExpressionAdapter(new JExprParent(), context);
+        node.getTrue().apply(eaTrue);
+        ExpressionAdapter eaFalse = new ExpressionAdapter(new JExprParent(), context);
+        node.getFalse().apply(eaFalse);
+        expr = JOp.cond(eaCond.expr, eaTrue.expr, eaFalse.expr);
     }
     
     @Override

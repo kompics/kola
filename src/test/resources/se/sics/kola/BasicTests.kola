@@ -31,6 +31,8 @@ public class BasicTests {
     public boolean test() {
         System.out.println("Running language feature tests...");
         integerArithmeticsTest();
+        bitwiseTests();
+        booleanTests();
         return true;
     }
     
@@ -76,5 +78,54 @@ public class BasicTests {
         y = --x;
         Assert.assertEquals(4, x);
         Assert.assertEquals(4, y);
+    }
+    
+    private void bitwiseTests() {
+        System.out.println("Running bitwise tests...");
+        int x, y, z;
+        x = 8;
+        y = x >>> 1;
+        Assert.assertEquals(4, y);
+        x = 8;
+        y = x << 1;
+        Assert.assertEquals(16, y);
+        x = -1;
+        y = x >> 1;
+        Assert.assertEquals(-1, y);
+        x = -1;
+        y = ~x;
+        Assert.assertEquals(0, y);
+        x = 8;
+        y = 4;
+        z = x | y;
+        Assert.assertEquals(12, z);
+        x = 8;
+        y = 12;
+        z = x & y;
+        Assert.assertEquals(8, z);
+        x = 8;
+        y = 12;
+        z = x ^ y;
+        Assert.assertEquals(4, z);
+    }
+    
+    private void booleanTests() {
+        System.out.println("Running boolean tests...");
+        boolean x, y, z;
+        x = true;
+        y = !x;
+        Assert.assertEquals(false, y);
+        x = true;
+        y = false;
+        z = x && y;
+        Assert.assertEquals(false, z);
+        x = true;
+        y = false;
+        z = x || y;
+        Assert.assertEquals(true, z);
+        x = true;
+        y = false;
+        z = x ? y : true;
+        Assert.assertEquals(false, z);
     }
 }
