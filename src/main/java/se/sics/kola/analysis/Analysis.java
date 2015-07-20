@@ -404,11 +404,11 @@ public interface Analysis extends Switch
     void caseTVoidKeyword(TVoidKeyword node);
     void caseTVolatileKeyword(TVolatileKeyword node);
     void caseTWhileKeyword(TWhileKeyword node);
-    void caseTDefinitionKeyword(TDefinitionKeyword node);
     void caseTHandlerKeyword(THandlerKeyword node);
     void caseTHandleKeyword(THandleKeyword node);
     void caseTPortKeyword(TPortKeyword node);
     void caseTComponentKeyword(TComponentKeyword node);
+    void caseTComponentdefKeyword(TComponentdefKeyword node);
     void caseTSubscribeKeyword(TSubscribeKeyword node);
     void caseTUnsubscribeKeyword(TUnsubscribeKeyword node);
     void caseTConnectKeyword(TConnectKeyword node);

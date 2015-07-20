@@ -2421,12 +2421,6 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseTDefinitionKeyword(TDefinitionKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseTHandlerKeyword(THandlerKeyword node)
     {
         defaultCase(node);
@@ -2446,6 +2440,12 @@ public class AnalysisAdapter implements Analysis
 
     @Override
     public void caseTComponentKeyword(TComponentKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseTComponentdefKeyword(TComponentdefKeyword node)
     {
         defaultCase(node);
     }

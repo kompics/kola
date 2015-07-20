@@ -310,31 +310,31 @@ class TokenIndex extends AnalysisAdapter
     }
 
     @Override
-    public void caseTDefinitionKeyword(@SuppressWarnings("unused") TDefinitionKeyword node)
+    public void caseTHandlerKeyword(@SuppressWarnings("unused") THandlerKeyword node)
     {
         this.index = 50;
     }
 
     @Override
-    public void caseTHandlerKeyword(@SuppressWarnings("unused") THandlerKeyword node)
+    public void caseTHandleKeyword(@SuppressWarnings("unused") THandleKeyword node)
     {
         this.index = 51;
     }
 
     @Override
-    public void caseTHandleKeyword(@SuppressWarnings("unused") THandleKeyword node)
+    public void caseTPortKeyword(@SuppressWarnings("unused") TPortKeyword node)
     {
         this.index = 52;
     }
 
     @Override
-    public void caseTPortKeyword(@SuppressWarnings("unused") TPortKeyword node)
+    public void caseTComponentKeyword(@SuppressWarnings("unused") TComponentKeyword node)
     {
         this.index = 53;
     }
 
     @Override
-    public void caseTComponentKeyword(@SuppressWarnings("unused") TComponentKeyword node)
+    public void caseTComponentdefKeyword(@SuppressWarnings("unused") TComponentdefKeyword node)
     {
         this.index = 54;
     }

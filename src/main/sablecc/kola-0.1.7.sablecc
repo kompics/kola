@@ -2,7 +2,7 @@
  * ------------
  * This file is part of the Kola language specification.
  *
- * Copyright 2006,2012 Etienne M. Gagnon <egagnon@j-meg.com>
+ * Copyright 2015 Lars Kroll <lkroll@kth.se>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,11 +262,11 @@ Tokens
   while_keyword = 'while';
 
   // Kompics
-  definition_keyword = 'definition';
   handler_keyword = 'handler';
   handle_keyword = 'handle';
   port_keyword = 'port';
   component_keyword = 'component';
+  componentdef_keyword = 'componentdef';
   subscribe_keyword = 'subscribe';
   unsubscribe_keyword = 'unsubscribe';
   connect_keyword = 'connect';
@@ -1899,7 +1899,7 @@ Productions
     modifiers? event_keyword identifier type_parameters? header_fields? super? interfaces? class_body {-> New event_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], header_fields, [interfaces.interface_type], class_body.class_body)};
 
   component_declaration {-> component_declaration} =
-    modifiers? component_keyword definition_keyword identifier type_parameters? component_body {-> New component_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], component_body.component_body)};
+    modifiers? componentdef_keyword identifier type_parameters? component_body {-> New component_declaration([modifiers.modifier], identifier, [type_parameters.type_parameter], component_body.component_body)};
 
   port_body {-> port_body} = 
     l_brc port_body_declarations? r_brc {-> New port_body([port_body_declarations.port_body_declaration])};

@@ -5,16 +5,16 @@ package se.sics.kola.node;
 import se.sics.kola.analysis.*;
 
 @SuppressWarnings("nls")
-public final class TDefinitionKeyword extends Token
+public final class TComponentdefKeyword extends Token
 {
-    public TDefinitionKeyword()
+    public TComponentdefKeyword()
     {
-        super.setText("definition");
+        super.setText("componentdef");
     }
 
-    public TDefinitionKeyword(int line, int pos)
+    public TComponentdefKeyword(int line, int pos)
     {
-        super.setText("definition");
+        super.setText("componentdef");
         setLine(line);
         setPos(pos);
     }
@@ -22,18 +22,18 @@ public final class TDefinitionKeyword extends Token
     @Override
     public Object clone()
     {
-      return new TDefinitionKeyword(getLine(), getPos());
+      return new TComponentdefKeyword(getLine(), getPos());
     }
 
     @Override
     public void apply(Switch sw)
     {
-        ((Analysis) sw).caseTDefinitionKeyword(this);
+        ((Analysis) sw).caseTComponentdefKeyword(this);
     }
 
     @Override
     public void setText(@SuppressWarnings("unused") String text)
     {
-        throw new RuntimeException("Cannot change TDefinitionKeyword text.");
+        throw new RuntimeException("Cannot change TComponentdefKeyword text.");
     }
 }
