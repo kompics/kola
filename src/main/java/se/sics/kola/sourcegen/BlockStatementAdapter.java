@@ -34,26 +34,28 @@ import se.sics.kola.node.ALocalVariableDeclaration;
 import se.sics.kola.node.AStatementBlockStatement;
 import se.sics.kola.node.AVariableBlockStatement;
 import se.sics.kola.node.PModifier;
+import se.sics.kola.node.PVariableDeclarator;
 
 /**
  *
  * @author lkroll
  */
 public class BlockStatementAdapter extends DepthFirstAdapter {
+
     private final ResolutionContext context;
     private final JBlock block;
-    
+
     BlockStatementAdapter(ResolutionContext context, JBlock block) {
         this.context = context;
         this.block = block;
     }
-    
+
     @Override
     public void caseAStatementBlockStatement(AStatementBlockStatement node) {
         StatementAdapter sa = new StatementAdapter(new JBlockParent(block), context);
         node.getStatement().apply(sa);
     }
-    
+
     @Override
     public void caseAVariableBlockStatement(AVariableBlockStatement node) {
         ALocalVariableDeclaration decl = (ALocalVariableDeclaration) node.getLocalVariableDeclaration();
@@ -71,8 +73,11 @@ public class BlockStatementAdapter extends DepthFirstAdapter {
             }
 
         });
+        for (PVariableDeclarator declor : decl.getVariableDeclarator()) {
+            declor.apply(vda);
+        }
     }
-    
+
     @Override
     public void caseAClassBlockStatement(AClassBlockStatement node) {
         ClassAdapter ca = new ClassAdapter(context, new ClassAdapter.ClassParent() {

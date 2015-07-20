@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
+import junit.framework.AssertionFailedError;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,19 +85,28 @@ public class PureJavaTest {
                 IllegalAccessException |
                 NoSuchMethodException |
                 SecurityException |
-                IllegalArgumentException |
-                InvocationTargetException ex) {
+                IllegalArgumentException ex) {
             ex.printStackTrace(System.err);
             Assert.fail(ex.getMessage());
+        } catch (InvocationTargetException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof AssertionFailedError) {
+                throw (AssertionFailedError) cause;
+            } else {
+                cause.printStackTrace(System.err);
+                Assert.fail(cause.getMessage());
+            }
         }
     }
 
     private void compile(String path) throws IOException, InterruptedException {
         List<File> sourceFiles = findSources(path);
-        String[] args = new String[sourceFiles.size() + 1];
+        String[] args = new String[sourceFiles.size() + 3];
         args[0] = "javac";
+        args[1] = "-cp";
+        args[2] = System.getProperty("java.class.path");
         for (int i = 0; i < sourceFiles.size(); i++) {
-            args[i + 1] = sourceFiles.get(i).getAbsolutePath();
+            args[i + 3] = sourceFiles.get(i).getAbsolutePath();
         }
         Process p = Runtime.getRuntime().exec(args);
         String s = null;

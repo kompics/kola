@@ -66,7 +66,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         AName firstName = (AName) spec.getName();
         JClass ctype;
         try {
-            ctype = context.resolve(nameToString(firstName));
+            ctype = context.resolveType(nameToString(firstName));
         } catch (ClassNotFoundException ex) {
             Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
             return;
@@ -83,7 +83,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         for (IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
             try {
-                ctype = context.resolve(cname);
+                ctype = context.resolveType(cname);
             } catch (ClassNotFoundException ex) {
                 Logger.error("Couldn't resolve type: " + cname);
             }
@@ -112,7 +112,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         AName firstName1 = (AName) spec1.getName();
         JClass ctype1, ctype2;
         try {
-            ctype1 = context.resolve(nameToString(firstName1));
+            ctype1 = context.resolveType(nameToString(firstName1));
         } catch (ClassNotFoundException ex) {
             Logger.error(firstName1.getIdentifier().getLast(), "Could not resolve type!");
             return;
@@ -129,7 +129,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         for (IdWithOptArgs iwoa : list1) {
             String cname = ctype1.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
             try {
-                ctype1 = context.resolve(cname);
+                ctype1 = context.resolveType(cname);
             } catch (ClassNotFoundException ex) {
                 Logger.error("Couldn't resolve type: " + cname);
             }
@@ -147,7 +147,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         ATypeDeclSpecifier spec2 = (ATypeDeclSpecifier) node.getSpecifier2();
         AName firstName2 = (AName) spec2.getName();
         try {
-            ctype2 = context.resolve(nameToString(firstName2));
+            ctype2 = context.resolveType(nameToString(firstName2));
         } catch (ClassNotFoundException ex) {
             Logger.error(firstName2.getIdentifier().getLast(), "Could not resolve type!");
             return;
@@ -164,7 +164,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         for (IdWithOptArgs iwoa : list2) {
             String cname = ctype2.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
             try {
-                ctype2 = context.resolve(cname);
+                ctype2 = context.resolveType(cname);
             } catch (ClassNotFoundException ex) {
                 Logger.error("Couldn't resolve type: " + cname);
             }

@@ -20,12 +20,15 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.sun.codemodel.JFieldRef;
 import com.sun.codemodel.JInvocation;
+import se.sics.kola.Logger;
+import se.sics.kola.PrintAdapter;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AExpressionArgument;
+import se.sics.kola.node.AName;
 import se.sics.kola.node.ANameArgument;
 import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -43,14 +46,20 @@ public class ArgumentAdapter extends DepthFirstAdapter {
     
     @Override
     public void caseANameArgument(ANameArgument node) {
-        String name = nameToString(node.getName());
-        invocation.arg(name);
+        JFieldRef field = context.resolveField((AName) node.getName());
+        invocation.arg(field);
     }
     
     @Override
     public void caseAExpressionArgument(AExpressionArgument node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpressionNoName().apply(ea);
+        if (ea.expr == null) {
+            PrintAdapter pa = new PrintAdapter();
+            node.getExpressionNoName().apply(pa);
+            Logger.error("Couldn't generate expression from this subtree:\n"+pa.toString());
+            System.exit(1);
+        }
         invocation.arg(ea.expr);
     }
 }

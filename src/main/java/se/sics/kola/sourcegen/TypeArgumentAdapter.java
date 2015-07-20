@@ -65,7 +65,7 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
         PTypeArguments lastArgsMaybe = node.getTypeArguments();
         JClass ctype;
         try {
-            ctype = context.resolve(nameToString(firstName));
+            ctype = context.resolveType(nameToString(firstName));
         } catch (ClassNotFoundException ex) {
             Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
             return;
@@ -86,7 +86,7 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
         for (Util.IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
             try {
-                ctype = context.resolve(cname);
+                ctype = context.resolveType(cname);
             } catch (ClassNotFoundException ex) {
                 Logger.error("Couldn't resolve type: " + cname);
             }

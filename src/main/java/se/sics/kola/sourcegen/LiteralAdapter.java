@@ -25,6 +25,7 @@ import com.sun.codemodel.JExpression;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ABooleanLiteral;
+import se.sics.kola.node.AIntegerLiteral;
 import se.sics.kola.node.AStringLiteral;
 
 /**
@@ -51,5 +52,34 @@ public class LiteralAdapter extends DepthFirstAdapter {
         } else {
             Logger.error(node.getBooleanLiteral(), "Not a valid boolean literal: " + node.getBooleanLiteral().getText());
         }
+    }
+
+    @Override
+    public void caseAIntegerLiteral(AIntegerLiteral node) {
+        String literal = node.getIntegerLiteral().getText().replace("_", "");
+        boolean isLong = false;
+        if (literal.contains("l") || literal.contains("L")) {
+            isLong = true;
+            literal = literal.substring(0, literal.length() - 1);
+        }
+        int base = 10;
+        if (literal.startsWith("0x") || literal.startsWith("0X")) {
+            literal = literal.substring(2);
+            base = 16;
+        } else if (literal.startsWith("0b") || literal.startsWith("0B")) {
+            literal = literal.substring(2);
+            base = 2;
+        } else if (literal.startsWith("0") && literal.matches("0*[1-7][0-7]*")) {
+            literal = literal.substring(1);
+            base = 8;
+        }
+        if (isLong) {
+            long l = Long.parseLong(literal, base);
+            expr = JExpr.lit(l);
+        } else {
+            int i = Integer.parseInt(literal, base);
+            expr = JExpr.lit(i);
+        }
+
     }
 }
