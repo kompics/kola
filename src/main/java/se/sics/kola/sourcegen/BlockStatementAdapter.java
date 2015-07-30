@@ -42,8 +42,8 @@ import se.sics.kola.node.PVariableDeclarator;
  */
 public class BlockStatementAdapter extends DepthFirstAdapter {
 
-    private final ResolutionContext context;
-    private final JBlock block;
+    protected final ResolutionContext context;
+    protected final JBlock block;
 
     BlockStatementAdapter(ResolutionContext context, JBlock block) {
         this.context = context;
@@ -80,7 +80,7 @@ public class BlockStatementAdapter extends DepthFirstAdapter {
 
     @Override
     public void caseAClassBlockStatement(AClassBlockStatement node) {
-        ClassAdapter ca = new ClassAdapter(context, new ClassAdapter.ClassParent() {
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new TypeDeclarationAdapter.TypeParent() {
 
             @Override
             public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {

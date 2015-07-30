@@ -40,11 +40,11 @@ import se.sics.kola.node.AVolatileModifier;
  *
  * @author lkroll
  */
-class ClassModifierAdapter extends DepthFirstAdapter {
+class TypeModifierAdapter extends DepthFirstAdapter {
 
     private int mods = 0;
 
-    ClassModifierAdapter() {
+    TypeModifierAdapter() {
     }
 
     public int getMods() {

@@ -23,9 +23,46 @@ import junit.framework.Assert;
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-public class BasicParent {
+public enum ETest {
+    VAL1(1),
+    VAL2(2);
+    
+    private final int v;
+    
+    ETest(int v) {
+        this.v = v;
+    }
+    
+    public int getV() {
+        return this.v;
+    }
+}
+
+public @interface ATest {
+    String value();
+}
+
+public interface BasicParentIf {
+    public int testMethod2();
+}
+
+public interface BasicIf extends BasicParentIf {
+    public int testMethod1();
+}
+
+public abstract class BasicParent implements BasicIf {
     final int field = 28;
     static final int sfield = 24;
+    
+    @Override
+    public int testMethod1() {
+        return 13;
+    }
+    
+    @ATest("Bla")
+    protected static int testMethod3() {
+        return 23;
+    }
 }
 
 /**
@@ -46,6 +83,7 @@ public class BasicTests extends BasicParent {
         assignmentTests();
         relationTests();
         accessTests();
+        invocationTests();
         return true;
     }
     
@@ -282,5 +320,28 @@ public class BasicTests extends BasicParent {
         int[] ia = new int[1];
         ia[0] = 12;
         Assert.assertEquals(12, ia[0]);
+        Assert.assertEquals(1, ETest.VAL1.getV());
+        Assert.assertEquals(2, ETest.VAL2.getV());
+    }
+    
+    private void invocationTests() {
+        System.out.println("Running invocation tests...");
+        Assert.assertEquals(19, testMethod2());
+        Assert.assertEquals(17, testMethod1());
+        Assert.assertEquals(17, this.testMethod1());
+        Assert.assertEquals(17, BasicTests.this.testMethod1());
+        Assert.assertEquals(13, super.testMethod1());
+        Assert.assertEquals(23, BasicParent.testMethod3());
+        Assert.assertEquals(13, BasicTests.super.testMethod1());
+    }
+    
+    @Override
+    public int testMethod1() {
+        return 17;
+    }
+    
+    @Override
+    public int testMethod2() {
+        return 19;
     }
 }

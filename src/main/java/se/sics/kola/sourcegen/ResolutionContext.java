@@ -47,7 +47,20 @@ class ResolutionContext {
     JCodeModel unit;
     Map<String, JClass> imports = new HashMap<>();
     Map<String, JDefinedClass> declaredClasses = new HashMap<>();
-    Set<String> generics = new HashSet<String>();
+    private LinkedList<Set<String>> generics = new LinkedList<>();
+    
+    void pushLevel() {
+        generics.push(new HashSet<String>());
+    }
+    
+    void popLevel() {
+        generics.pop();
+    }
+    
+    void addGeneric(String g) {
+        Set<String> s = generics.peek();
+        s.add(g);
+    }
 
     JClass resolveType(String name) throws ClassNotFoundException {
         if (generics.contains(name)) {
@@ -59,15 +72,24 @@ class ResolutionContext {
         }
         JClass jc = imports.get(name);
         if (jc == null) {
+            // empty package
+            try {
+                Class c = ClassLoader.getSystemClassLoader().loadClass(name);
+                return unit.ref(c);
+            } catch (ClassNotFoundException ex) {
+                // ignore
+            }
+            // lang
+            String langName = "java.lang." + name;
+            try {
+                Class c = ClassLoader.getSystemClassLoader().loadClass(langName);
+                return unit.ref(c);
+            } catch (ClassNotFoundException ex) {
+                // ignore
+            }
             if (name.contains(".")) { // needs to be fully qualified
                 jc = unit.ref(name);
-            } else if (name.equals("System")) {
-                jc = unit.directClass("System");
-            } else if (name.equals("Object")) {
-                jc = unit.directClass("Object");
-            } else if (name.equals("Class")) {
-                jc = unit.directClass("Class");
-            }else {
+            } else {
                 throw new ClassNotFoundException("Could not find class of type: " + name);
             }
         }

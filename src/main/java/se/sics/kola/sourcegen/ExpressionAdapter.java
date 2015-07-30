@@ -42,6 +42,7 @@ import se.sics.kola.node.AClassArrayCreationExpression;
 import se.sics.kola.node.AClassExpressionNoName;
 import se.sics.kola.node.AClassFieldAccess;
 import se.sics.kola.node.AClassInitializerArrayCreationExpression;
+import se.sics.kola.node.AClassMethodInvocation;
 import se.sics.kola.node.AClassName;
 import se.sics.kola.node.ACorExpressionNoName;
 import se.sics.kola.node.ADiamondTypeArgumentsOrDiamond;
@@ -79,6 +80,7 @@ import se.sics.kola.node.ARcastExpressionNoName;
 import se.sics.kola.node.AShlExpressionNoName;
 import se.sics.kola.node.AShrExpressionNoName;
 import se.sics.kola.node.ASuperFieldAccess;
+import se.sics.kola.node.ASuperMethodInvocation;
 import se.sics.kola.node.AThisExpressionNoName;
 import se.sics.kola.node.ATildeExpressionNoName;
 import se.sics.kola.node.ATypeArgumentsTypeArgumentsOrDiamond;
@@ -89,6 +91,7 @@ import se.sics.kola.node.AVoidExpressionNoName;
 import se.sics.kola.node.PArgument;
 import se.sics.kola.node.PDimExpr;
 import se.sics.kola.node.PVariableInitializer;
+import se.sics.kola.sourcegen.ArgumentAdapter.Argumentable;
 import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
@@ -121,11 +124,12 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     ////////////////////////// Method Invocation ///////////////////////////
     @Override
     public void caseAMethodMethodInvocation(AMethodMethodInvocation node) {
-        String name = nameToString(node.getName());
+        //String name = nameToString(node.getName());
         JInvocation inv = context.resolveInvocation((AName) node.getName(), parent);
+        Argumentable ia = new InvocationArgumentable(inv);
         expr = inv;
         for (PArgument arg : node.getArgument()) {
-            ArgumentAdapter aa = new ArgumentAdapter(inv, context);
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
             arg.apply(aa);
         }
     }
@@ -136,14 +140,49 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         node.getExpressionNoName().apply(ea);
         JExpression lhs = ea.expr;
         JInvocation inv = parent.invoke(lhs, node.getIdentifier().getText());
-        if (node.getNonWildTypeArguments().size() != 0) {
+        if (!node.getNonWildTypeArguments().isEmpty()) {
             Logger.error(node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
         }
+        Argumentable ia = new InvocationArgumentable(inv);
         for (PArgument arg : node.getArgument()) {
-            ArgumentAdapter aa = new ArgumentAdapter(inv, context);
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
             arg.apply(aa);
         }
         expr = inv;
+    }
+
+    @Override
+    public void caseASuperMethodInvocation(ASuperMethodInvocation node) {
+        JInvocation inv = JExpr._super().invoke(node.getIdentifier().getText());
+        if (!node.getNonWildTypeArguments().isEmpty()) {
+            Logger.error(node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
+        }
+        Argumentable ia = new InvocationArgumentable(inv);
+        for (PArgument arg : node.getArgument()) {
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
+            arg.apply(aa);
+        }
+        expr = inv;
+    }
+
+    @Override
+    public void caseAClassMethodInvocation(AClassMethodInvocation node) {
+        AClassName acname = (AClassName) node.getClassName();
+        String name = nameToString(acname.getName());
+        try {
+            JClass jc = context.resolveType(name);
+            JExpression jcs = JExpr.dotsuper(jc);
+            JInvocation inv = jcs.invoke(node.getIdentifier().getText());
+            Argumentable ia = new InvocationArgumentable(inv);
+            for (PArgument arg : node.getArgument()) {
+                ArgumentAdapter aa = new ArgumentAdapter(ia, context);
+                arg.apply(aa);
+            }
+            expr = inv;
+        } catch (ClassNotFoundException ex) {
+            AName aname = (AName) acname.getName();
+            Logger.error(aname.getIdentifier().peekFirst(), "Could not find type: " + name);
+        }
     }
 
     ////////////////////////// Instance Creation ///////////////////////////
@@ -195,9 +234,10 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         }
         // ***** ARGS *******
         JInvocation inv = JExpr._new(ctype);
+        Argumentable ia = new InvocationArgumentable(inv);
         expr = inv;
         for (PArgument arg : node.getArgument()) {
-            ArgumentAdapter aa = new ArgumentAdapter(inv, context);
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
             arg.apply(aa);
         }
     }
@@ -645,7 +685,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         public JExpressionStatement assign(JAssignmentTarget lhs, JExpression rhs);
     }
 
-    public static class JExprParent implements ExpressionParent {
+    static class JExprParent implements ExpressionParent {
 
         @Override
         public JInvocation invoke(String method) {
@@ -670,6 +710,22 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         @Override
         public void addStatement(JExpressionStatement stmt) {
             // ignore
+        }
+
+    }
+
+    static class InvocationArgumentable implements Argumentable {
+
+        private final JInvocation invocation;
+
+        InvocationArgumentable(JInvocation invocation) {
+            this.invocation = invocation;
+        }
+
+        @Override
+        public Argumentable arg(JExpression expr) {
+            invocation.arg(expr);
+            return this;
         }
 
     }

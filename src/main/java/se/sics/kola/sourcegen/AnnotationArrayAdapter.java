@@ -29,42 +29,34 @@ import se.sics.kola.node.AArrayElementValue;
 import se.sics.kola.node.AConditionalElementValue;
 import se.sics.kola.node.AElementValueArrayInitializer;
 import se.sics.kola.node.PElementValue;
-import se.sics.kola.sourcegen.AnnotationAdapter.Annotatable;
-import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
 
 /**
  *
  * @author lkroll
  */
-public class AnnotationParameterAdapter extends DepthFirstAdapter {
-
+public class AnnotationArrayAdapter extends DepthFirstAdapter {
     private final ResolutionContext context;
-    private final JAnnotationUse ann;
-    private final String id;
+    private final JAnnotationArrayMember ann;
 
-    boolean reference = false;
-
-    AnnotationParameterAdapter(String id, JAnnotationUse ann, ResolutionContext context) {
-        this.id = id;
+    AnnotationArrayAdapter(JAnnotationArrayMember ann, ResolutionContext context) {
         this.ann = ann;
         this.context = context;
     }
-
-    @Override
+    
+     @Override
     public void caseAConditionalElementValue(AConditionalElementValue node) {
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        ExpressionAdapter ea = new ExpressionAdapter(new ExpressionAdapter.JExprParent(), context);
         node.getExpression().apply(ea);
-        ann.param(id, ea.expr);
+        ann.param(ea.expr);
     }
     
     @Override
     public void caseAAnnotationElementValue(AAnnotationElementValue node) {
-        final JAnnotationArrayMember annarr = ann.paramArray(id);
-        AnnotationAdapter aa = new AnnotationAdapter(new Annotatable(){
+        AnnotationAdapter aa = new AnnotationAdapter(new AnnotationAdapter.Annotatable(){
 
             @Override
             public JAnnotationUse annotate(JClass atype) {
-                return annarr.annotate(atype);
+                return ann.annotate(atype);
             }
         }, context);
         node.getAnnotation().apply(aa);
@@ -72,30 +64,10 @@ public class AnnotationParameterAdapter extends DepthFirstAdapter {
     
     @Override
     public void caseAArrayElementValue(AArrayElementValue node) {
-        final JAnnotationArrayMember annarr = ann.paramArray(id);
-        AnnotationArrayAdapter aaa = new AnnotationArrayAdapter(annarr, context);
+        AnnotationArrayAdapter aaa = new AnnotationArrayAdapter(ann, context); //FIXME note that we are techincally losing a level here...not sure if it matters in practice
         AElementValueArrayInitializer aevi = (AElementValueArrayInitializer) node.getElementValueArrayInitializer();
         for (PElementValue val : aevi.getElementValue()) {
             val.apply(aaa);
         }
     }
-    
-//    @Override
-//    public void inAReferenceTypeNoArguments(AReferenceTypeNoArguments node) {
-//        reference = true;
-//    }
-//
-//    @Override
-//    public void inAName(AName node) {
-//        String name = nameToString(node);
-//        JClass atype = context.imports.get(name);
-//        if (atype == null) {
-//            atype = context.unit.ref(name);
-//        }
-//        if (reference) {
-//            ann.param(id, atype);
-//        } else {
-//            Logger.error(node.getIdentifier().element(), "Unsupported annotation type.");
-//        }
-//    }
 }

@@ -32,8 +32,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassTypeDeclaration;
+import se.sics.kola.node.AComponentTypeDeclaration;
+import se.sics.kola.node.AEventTypeDeclaration;
+import se.sics.kola.node.AInterfaceTypeDeclaration;
 import se.sics.kola.node.AJavaCompilationUnit;
 import se.sics.kola.node.APackageDeclaration;
+import se.sics.kola.node.APortTypeDeclaration;
 import se.sics.kola.node.ASingleImportDeclaration;
 import se.sics.kola.node.Start;
 import static se.sics.kola.sourcegen.Util.nameToString;
@@ -52,11 +56,11 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
     public JCodeModel getUnit() {
         return this.unit;
     }
-    
+
     public JPackage getPackage() {
         return this.pack;
     }
-    
+
     @Override
     public void inStart(Start node) {
         System.out.println("Generating output...");
@@ -105,13 +109,50 @@ public class JavaSourceGenerator extends DepthFirstAdapter {
 
     @Override
     public void caseAClassTypeDeclaration(AClassTypeDeclaration node) {
-        ClassAdapter ca = new ClassAdapter(context, new ClassAdapter.ClassParent() {
-
-            @Override
-            public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
-                return pack._class(mods, name, classTypeVal);
-            }
-        });
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
         node.apply(ca);
+    }
+
+    @Override
+    public void caseAInterfaceTypeDeclaration(AInterfaceTypeDeclaration node) {
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        node.apply(ca);
+    }
+    
+    @Override
+    public void caseAPortTypeDeclaration(APortTypeDeclaration node) {
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        node.apply(ca);
+    }
+    
+    @Override
+    public void caseAEventTypeDeclaration(AEventTypeDeclaration node) {
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        node.apply(ca);
+    }
+    
+    @Override
+    public void caseAComponentTypeDeclaration(AComponentTypeDeclaration node) {
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        node.apply(ca);
+    }
+
+    class PackageTypeParent implements TypeDeclarationAdapter.TypeParent {
+
+        private final JPackage pack;
+
+        PackageTypeParent(JPackage pack) {
+            if (pack == null) {
+                this.pack = unit.rootPackage();
+            } else {
+                this.pack = pack;
+            }
+        }
+
+        @Override
+        public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
+            return pack._class(mods, name, classTypeVal);
+        }
+
     }
 }

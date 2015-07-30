@@ -20,8 +20,8 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JFieldRef;
-import com.sun.codemodel.JInvocation;
 import se.sics.kola.Logger;
 import se.sics.kola.PrintAdapter;
 import se.sics.kola.analysis.DepthFirstAdapter;
@@ -36,10 +36,10 @@ import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
  */
 public class ArgumentAdapter extends DepthFirstAdapter {
 
-    private final JInvocation invocation;
+    private final Argumentable invocation;
     private final ResolutionContext context;
 
-    ArgumentAdapter(JInvocation invocation, ResolutionContext context) {
+    ArgumentAdapter(Argumentable invocation, ResolutionContext context) {
         this.invocation = invocation;
         this.context = context;
     }
@@ -61,5 +61,9 @@ public class ArgumentAdapter extends DepthFirstAdapter {
             System.exit(1);
         }
         invocation.arg(ea.expr);
+    }
+    
+    static interface Argumentable {
+        public Argumentable arg(JExpression expr);
     }
 }
