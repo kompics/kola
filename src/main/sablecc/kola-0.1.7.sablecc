@@ -1168,12 +1168,12 @@ Productions
     {unsubscribe} unsubscribe_statement {-> New statement_without_trailing_substatement.unsubscribe(unsubscribe_statement.unsubscribe_statement)} |
     {trigger} trigger_statement {-> New statement_without_trailing_substatement.trigger(trigger_statement.trigger_statement)};
 
-  statement_no_short_if =
-    {without_trailing_substatement} statement_without_trailing_substatement |
-    {labeled_statement} labeled_statement_no_short_if |
-    {if} if_then_else_statement_no_short_if |
-    {while_statement} while_statement_no_short_if |
-    {for_statement} for_statement_no_short_if;
+  statement_no_short_if {-> statement}=
+    {without_trailing_substatement} [stmt]:statement_without_trailing_substatement {-> New statement.without_trailing_substatement(stmt)} |
+    {labeled_statement} [stmt]:labeled_statement_no_short_if {-> New statement.labeled_statement(stmt.labeled_statement)} |
+    {if} [stmt]:if_then_else_statement_no_short_if {-> New statement.if_else(stmt.if_then_else_statement)} |
+    {while_statement} [stmt]:while_statement_no_short_if {-> New statement.while_statement(stmt.while_statement)} |
+    {for_statement} [stmt]:for_statement_no_short_if {-> New statement.for_statement(New for_statement.basic_for(stmt.basic_for_statement))};
 
   // 14.6
 
@@ -1184,8 +1184,8 @@ Productions
   labeled_statement {-> labeled_statement} =
     identifier colon statement {-> New labeled_statement(identifier, statement)};
 
-  labeled_statement_no_short_if {-> labeled_statement_no_short_if} =
-    identifier colon statement_no_short_if {-> New labeled_statement_no_short_if(identifier, statement_no_short_if)};
+  labeled_statement_no_short_if {-> labeled_statement} =
+    identifier colon [stmt]:statement_no_short_if {-> New labeled_statement(identifier, stmt.statement)};
 
   // 14.8
 
@@ -1214,15 +1214,15 @@ Productions
   //  if_keyword l_par expression r_par statement_no_short_if else_keyword statement;
 
   if_then_else_statement {-> if_then_else_statement} =
-    {expression} if_keyword l_par expression_no_name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if, statement)} |
-    {name} if_keyword l_par name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.name(name.name), statement_no_short_if, statement)};
+    {expression} if_keyword l_par expression_no_name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if.statement, statement)} |
+    {name} if_keyword l_par name r_par statement_no_short_if else_keyword statement {-> New if_then_else_statement(New expression.name(name.name), statement_no_short_if.statement, statement)};
 
   //if_then_else_statement_no_short_if =
   //  if_keyword l_par expression r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if;
 
-  if_then_else_statement_no_short_if {-> if_then_else_statement_no_short_if} =
-    {expression} if_keyword l_par expression_no_name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement_no_short_if(New expression.expression(expression_no_name.expression_no_name), then_statement, else_statement)} |
-    {name} if_keyword l_par name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement_no_short_if(New expression.name(name.name), then_statement, else_statement)};
+  if_then_else_statement_no_short_if {-> if_then_else_statement} =
+    {expression} if_keyword l_par expression_no_name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement(New expression.expression(expression_no_name.expression_no_name), then_statement.statement, else_statement.statement)} |
+    {name} if_keyword l_par name r_par [then_statement]:statement_no_short_if else_keyword [else_statement]:statement_no_short_if {-> New if_then_else_statement(New expression.name(name.name), then_statement.statement, else_statement.statement)};
 
   // 14.10
 
@@ -1292,9 +1292,9 @@ Productions
   //while_statement_no_short_if =
   //  while_keyword l_par expression r_par statement_no_short_if;
 
-  while_statement_no_short_if {-> while_statement_no_short_if} =
-    {expression} while_keyword l_par expression_no_name r_par statement_no_short_if {-> New while_statement_no_short_if(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if)} |
-    {name} while_keyword l_par name r_par statement_no_short_if {-> New while_statement_no_short_if(New expression.name(name.name), statement_no_short_if)};
+  while_statement_no_short_if {-> while_statement} =
+    {expression} while_keyword l_par expression_no_name r_par statement_no_short_if {-> New while_statement(New expression.expression(expression_no_name.expression_no_name), statement_no_short_if.statement)} |
+    {name} while_keyword l_par name r_par statement_no_short_if {-> New while_statement(New expression.name(name.name), statement_no_short_if.statement)};
 
   // 14.13
 
@@ -1321,9 +1321,9 @@ Productions
   //for_statement_no_short_if =
   //  for_keyword l_par for_init? [semi1]:semi expression? [semi2]:semi for_update? r_par statement_no_short_if;
 
-  for_statement_no_short_if {-> for_statement_no_short_if} =
-    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement_no_short_if {-> New for_statement_no_short_if.expression(for_init.for_init, expression_no_name.expression_no_name, for_update.for_update, statement_no_short_if)} |
-    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement_no_short_if {-> New for_statement_no_short_if.name(for_init.for_init, name.name, for_update.for_update, statement_no_short_if)};
+  for_statement_no_short_if {-> basic_for_statement} =
+    {expression} for_keyword l_par for_init? [semi1]:semi expression_no_name? [semi2]:semi for_update? r_par statement_no_short_if {-> New basic_for_statement.expression(for_init.for_init, expression_no_name.expression_no_name, for_update.for_update, statement_no_short_if.statement)} |
+    {name} for_keyword l_par for_init? [semi1]:semi name [semi2]:semi for_update? r_par statement_no_short_if {-> New basic_for_statement.name(for_init.for_init, name.name, for_update.for_update, statement_no_short_if.statement)};
 
   for_init {-> for_init} =
     {statement} statement_expression_list {-> New for_init.statement([statement_expression_list.expression_no_name])} |
@@ -2360,16 +2360,7 @@ statement_without_trailing_substatement =
     {unsubscribe} unsubscribe_statement |
     {trigger} trigger_statement;
 
-statement_no_short_if =
-    {without_trailing_substatement} statement_without_trailing_substatement |
-    {labeled_statement} labeled_statement_no_short_if |
-    {if} if_then_else_statement_no_short_if |
-    {while_statement} while_statement_no_short_if |
-    {for_statement} for_statement_no_short_if;
-
 labeled_statement = identifier statement;
-
-labeled_statement_no_short_if = identifier statement_no_short_if;
 
 local_variable_declaration =
     modifier* type variable_declarator+;
@@ -2380,14 +2371,11 @@ statement_expression = expression_no_name;
 
 if_then_statement = [cond]:expression [then]:statement;
 
-if_then_else_statement = [cond]:expression [then]:statement_no_short_if [else]:statement;
-
-if_then_else_statement_no_short_if = [cond]:expression [then]:statement_no_short_if [else]:statement_no_short_if;
+if_then_else_statement = [cond]:expression [then]:statement [else]:statement;
 
 
 while_statement = [cond]:expression [do]:statement;
 
-while_statement_no_short_if = [cond]:expression [do]:statement_no_short_if;
 
 for_statement =
     {basic_for} basic_for_statement |
@@ -2396,10 +2384,6 @@ for_statement =
 basic_for_statement = 
     {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement |
     {name} [init]:for_init? [cond]:name? [update]:for_update? [do]:statement;
-
-for_statement_no_short_if =
-    {expression} [init]:for_init? [cond]:expression_no_name? [update]:for_update? [do]:statement_no_short_if |
-    {name} [init]:for_init? [cond]:name [update]:for_update? [do]:statement_no_short_if;
 
 for_init =
     {statement} expression_no_name+ |

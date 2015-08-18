@@ -1293,43 +1293,7 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAWithoutTrailingSubstatementStatementNoShortIf(AWithoutTrailingSubstatementStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseALabeledStatementStatementNoShortIf(ALabeledStatementStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAIfStatementNoShortIf(AIfStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAWhileStatementStatementNoShortIf(AWhileStatementStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAForStatementStatementNoShortIf(AForStatementStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseALabeledStatement(ALabeledStatement node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseALabeledStatementNoShortIf(ALabeledStatementNoShortIf node)
     {
         defaultCase(node);
     }
@@ -1359,19 +1323,7 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAIfThenElseStatementNoShortIf(AIfThenElseStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseAWhileStatement(AWhileStatement node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAWhileStatementNoShortIf(AWhileStatementNoShortIf node)
     {
         defaultCase(node);
     }
@@ -1396,18 +1348,6 @@ public class AnalysisAdapter implements Analysis
 
     @Override
     public void caseANameBasicForStatement(ANameBasicForStatement node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAExpressionForStatementNoShortIf(AExpressionForStatementNoShortIf node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseANameForStatementNoShortIf(ANameForStatementNoShortIf node)
     {
         defaultCase(node);
     }

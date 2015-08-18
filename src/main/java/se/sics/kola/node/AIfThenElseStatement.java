@@ -8,7 +8,7 @@ import se.sics.kola.analysis.*;
 public final class AIfThenElseStatement extends PIfThenElseStatement
 {
     private PExpression _cond_;
-    private PStatementNoShortIf _then_;
+    private PStatement _then_;
     private PStatement _else_;
 
     public AIfThenElseStatement()
@@ -18,7 +18,7 @@ public final class AIfThenElseStatement extends PIfThenElseStatement
 
     public AIfThenElseStatement(
         @SuppressWarnings("hiding") PExpression _cond_,
-        @SuppressWarnings("hiding") PStatementNoShortIf _then_,
+        @SuppressWarnings("hiding") PStatement _then_,
         @SuppressWarnings("hiding") PStatement _else_)
     {
         // Constructor
@@ -70,12 +70,12 @@ public final class AIfThenElseStatement extends PIfThenElseStatement
         this._cond_ = node;
     }
 
-    public PStatementNoShortIf getThen()
+    public PStatement getThen()
     {
         return this._then_;
     }
 
-    public void setThen(PStatementNoShortIf node)
+    public void setThen(PStatement node)
     {
         if(this._then_ != null)
         {
@@ -166,7 +166,7 @@ public final class AIfThenElseStatement extends PIfThenElseStatement
 
         if(this._then_ == oldChild)
         {
-            setThen((PStatementNoShortIf) newChild);
+            setThen((PStatement) newChild);
             return;
         }
 

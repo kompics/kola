@@ -4915,111 +4915,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outATriggerStatementWithoutTrailingSubstatement(node);
     }
 
-    public void inAWithoutTrailingSubstatementStatementNoShortIf(AWithoutTrailingSubstatementStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAWithoutTrailingSubstatementStatementNoShortIf(AWithoutTrailingSubstatementStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAWithoutTrailingSubstatementStatementNoShortIf(AWithoutTrailingSubstatementStatementNoShortIf node)
-    {
-        inAWithoutTrailingSubstatementStatementNoShortIf(node);
-        if(node.getStatementWithoutTrailingSubstatement() != null)
-        {
-            node.getStatementWithoutTrailingSubstatement().apply(this);
-        }
-        outAWithoutTrailingSubstatementStatementNoShortIf(node);
-    }
-
-    public void inALabeledStatementStatementNoShortIf(ALabeledStatementStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outALabeledStatementStatementNoShortIf(ALabeledStatementStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseALabeledStatementStatementNoShortIf(ALabeledStatementStatementNoShortIf node)
-    {
-        inALabeledStatementStatementNoShortIf(node);
-        if(node.getLabeledStatementNoShortIf() != null)
-        {
-            node.getLabeledStatementNoShortIf().apply(this);
-        }
-        outALabeledStatementStatementNoShortIf(node);
-    }
-
-    public void inAIfStatementNoShortIf(AIfStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAIfStatementNoShortIf(AIfStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAIfStatementNoShortIf(AIfStatementNoShortIf node)
-    {
-        inAIfStatementNoShortIf(node);
-        if(node.getIfThenElseStatementNoShortIf() != null)
-        {
-            node.getIfThenElseStatementNoShortIf().apply(this);
-        }
-        outAIfStatementNoShortIf(node);
-    }
-
-    public void inAWhileStatementStatementNoShortIf(AWhileStatementStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAWhileStatementStatementNoShortIf(AWhileStatementStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAWhileStatementStatementNoShortIf(AWhileStatementStatementNoShortIf node)
-    {
-        inAWhileStatementStatementNoShortIf(node);
-        if(node.getWhileStatementNoShortIf() != null)
-        {
-            node.getWhileStatementNoShortIf().apply(this);
-        }
-        outAWhileStatementStatementNoShortIf(node);
-    }
-
-    public void inAForStatementStatementNoShortIf(AForStatementStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAForStatementStatementNoShortIf(AForStatementStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAForStatementStatementNoShortIf(AForStatementStatementNoShortIf node)
-    {
-        inAForStatementStatementNoShortIf(node);
-        if(node.getForStatementNoShortIf() != null)
-        {
-            node.getForStatementNoShortIf().apply(this);
-        }
-        outAForStatementStatementNoShortIf(node);
-    }
-
     public void inALabeledStatement(ALabeledStatement node)
     {
         defaultIn(node);
@@ -5043,31 +4938,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getIdentifier().apply(this);
         }
         outALabeledStatement(node);
-    }
-
-    public void inALabeledStatementNoShortIf(ALabeledStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outALabeledStatementNoShortIf(ALabeledStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseALabeledStatementNoShortIf(ALabeledStatementNoShortIf node)
-    {
-        inALabeledStatementNoShortIf(node);
-        if(node.getStatementNoShortIf() != null)
-        {
-            node.getStatementNoShortIf().apply(this);
-        }
-        if(node.getIdentifier() != null)
-        {
-            node.getIdentifier().apply(this);
-        }
-        outALabeledStatementNoShortIf(node);
     }
 
     public void inALocalVariableDeclaration(ALocalVariableDeclaration node)
@@ -5182,35 +5052,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outAIfThenElseStatement(node);
     }
 
-    public void inAIfThenElseStatementNoShortIf(AIfThenElseStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAIfThenElseStatementNoShortIf(AIfThenElseStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAIfThenElseStatementNoShortIf(AIfThenElseStatementNoShortIf node)
-    {
-        inAIfThenElseStatementNoShortIf(node);
-        if(node.getElse() != null)
-        {
-            node.getElse().apply(this);
-        }
-        if(node.getThen() != null)
-        {
-            node.getThen().apply(this);
-        }
-        if(node.getCond() != null)
-        {
-            node.getCond().apply(this);
-        }
-        outAIfThenElseStatementNoShortIf(node);
-    }
-
     public void inAWhileStatement(AWhileStatement node)
     {
         defaultIn(node);
@@ -5234,31 +5075,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getCond().apply(this);
         }
         outAWhileStatement(node);
-    }
-
-    public void inAWhileStatementNoShortIf(AWhileStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAWhileStatementNoShortIf(AWhileStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAWhileStatementNoShortIf(AWhileStatementNoShortIf node)
-    {
-        inAWhileStatementNoShortIf(node);
-        if(node.getDo() != null)
-        {
-            node.getDo().apply(this);
-        }
-        if(node.getCond() != null)
-        {
-            node.getCond().apply(this);
-        }
-        outAWhileStatementNoShortIf(node);
     }
 
     public void inABasicForForStatement(ABasicForForStatement node)
@@ -5367,72 +5183,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getInit().apply(this);
         }
         outANameBasicForStatement(node);
-    }
-
-    public void inAExpressionForStatementNoShortIf(AExpressionForStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAExpressionForStatementNoShortIf(AExpressionForStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAExpressionForStatementNoShortIf(AExpressionForStatementNoShortIf node)
-    {
-        inAExpressionForStatementNoShortIf(node);
-        if(node.getDo() != null)
-        {
-            node.getDo().apply(this);
-        }
-        if(node.getUpdate() != null)
-        {
-            node.getUpdate().apply(this);
-        }
-        if(node.getCond() != null)
-        {
-            node.getCond().apply(this);
-        }
-        if(node.getInit() != null)
-        {
-            node.getInit().apply(this);
-        }
-        outAExpressionForStatementNoShortIf(node);
-    }
-
-    public void inANameForStatementNoShortIf(ANameForStatementNoShortIf node)
-    {
-        defaultIn(node);
-    }
-
-    public void outANameForStatementNoShortIf(ANameForStatementNoShortIf node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseANameForStatementNoShortIf(ANameForStatementNoShortIf node)
-    {
-        inANameForStatementNoShortIf(node);
-        if(node.getDo() != null)
-        {
-            node.getDo().apply(this);
-        }
-        if(node.getUpdate() != null)
-        {
-            node.getUpdate().apply(this);
-        }
-        if(node.getCond() != null)
-        {
-            node.getCond().apply(this);
-        }
-        if(node.getInit() != null)
-        {
-            node.getInit().apply(this);
-        }
-        outANameForStatementNoShortIf(node);
     }
 
     public void inAStatementForInit(AStatementForInit node)
