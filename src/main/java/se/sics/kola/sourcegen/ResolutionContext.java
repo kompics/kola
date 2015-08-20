@@ -20,12 +20,15 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.google.common.base.Optional;
+import com.larskroll.common.Either;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JFieldRef;
 import com.sun.codemodel.JInvocation;
+import com.sun.codemodel.JLabel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -36,7 +39,6 @@ import se.sics.kola.node.AName;
 import se.sics.kola.node.TIdentifier;
 import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 import static se.sics.kola.sourcegen.Util.nameToString;
-import se.sics.kola.util.Either;
 
 /**
  *
@@ -47,24 +49,44 @@ class ResolutionContext {
     JCodeModel unit;
     Map<String, JClass> imports = new HashMap<>();
     Map<String, JDefinedClass> declaredClasses = new HashMap<>();
-    private LinkedList<Set<String>> generics = new LinkedList<>();
-    
+    private final LinkedList<Set<String>> generics = new LinkedList<>();
+    private final LinkedList<Map<String, JLabel>> labels = new LinkedList<>();
+
     void pushLevel() {
         generics.push(new HashSet<String>());
+        labels.push(new HashMap<String, JLabel>());
     }
-    
+
     void popLevel() {
         generics.pop();
+        labels.pop();
     }
-    
+
     void addGeneric(String g) {
         Set<String> s = generics.peek();
         s.add(g);
     }
 
+    void addLabel(String name, JLabel label) {
+        Map<String, JLabel> s = labels.peek();
+        s.put(name, label);
+    }
+    
+    Optional<JLabel> findLabel(String name) {
+        for (Map<String, JLabel> labelMap : labels) {
+            JLabel label = labelMap.get(name);
+            if (label != null) {
+                return Optional.of(label);
+            }
+        }
+        return Optional.absent();
+    }
+
     JClass resolveType(String name) throws ClassNotFoundException {
-        if (generics.contains(name)) {
-            return unit.directClass(name);
+        for (Set<String> genericSet : generics) {
+            if (genericSet.contains(name)) {
+                return unit.directClass(name);
+            }
         }
         JDefinedClass jcd = declaredClasses.get(name);
         if (jcd != null) {

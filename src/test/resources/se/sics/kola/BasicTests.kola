@@ -1,7 +1,3 @@
-package se.sics.kola;
-
-import junit.framework.Assert;
-
 /*
  * This file is part of the Kompics component model runtime.
  *
@@ -22,47 +18,63 @@ import junit.framework.Assert;
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+package se.sics.kola;
+
+import junit.framework.Assert;
 
 public enum ETest {
+
     VAL1(1),
     VAL2(2);
-    
+
     private final int v;
-    
+
     ETest(int v) {
         this.v = v;
     }
-    
+
     public int getV() {
         return this.v;
     }
 }
 
 public @interface ATest {
+
     String value();
 }
 
 public interface BasicParentIf {
+
     public int testMethod2();
 }
 
 public interface BasicIf extends BasicParentIf {
+
     public int testMethod1();
 }
 
 public abstract class BasicParent implements BasicIf {
+
     final int field = 28;
     static final int sfield = 24;
-    
+
     @Override
     public int testMethod1() {
         return 13;
     }
-    
+
     @ATest("Bla")
     protected static int testMethod3() {
         return 23;
     }
+}
+
+class TestException extends Exception {
+
+}
+
+class TestException2 extends Exception {
+
 }
 
 /**
@@ -70,10 +82,10 @@ public abstract class BasicParent implements BasicIf {
  * @author lkroll
  */
 public class BasicTests extends BasicParent {
-    
+
     private final int field = 42;
-    private final int[] array = new int[] {1, 2, 3};
-    
+    private final int[] array = new int[]{1, 2, 3};
+
     public boolean test() {
         System.out.println("Running language feature tests...");
         integerArithmeticsTest();
@@ -84,9 +96,10 @@ public class BasicTests extends BasicParent {
         relationTests();
         accessTests();
         invocationTests();
+        statementTests();
         return true;
     }
-    
+
     private void integerArithmeticsTest() {
         System.out.println("Running integer arithmetic tests...");
         int x, y, z;
@@ -95,23 +108,23 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(-5, y);
         x = 5;
         y = 3;
-        z = x+y;
+        z = x + y;
         Assert.assertEquals(8, z);
         x = 5;
         y = 3;
-        z = x-y;
+        z = x - y;
         Assert.assertEquals(2, z);
         x = 5;
         y = 3;
-        z = x*y;
+        z = x * y;
         Assert.assertEquals(15, z);
         x = 6;
         y = 3;
-        z = x/y;
+        z = x / y;
         Assert.assertEquals(2, z);
         x = 5;
         y = 3;
-        z = x%y;
+        z = x % y;
         Assert.assertEquals(2, z);
         x = 5;
         y = x++;
@@ -131,9 +144,9 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(4, y);
         long l = 1;
         x = 1;
-        Assert.assertEquals((long)x, l);
+        Assert.assertEquals((long) x, l);
     }
-    
+
     private void bitwiseTests() {
         System.out.println("Running bitwise tests...");
         int x, y, z;
@@ -162,7 +175,7 @@ public class BasicTests extends BasicParent {
         z = x ^ y;
         Assert.assertEquals(4, z);
     }
-    
+
     private void booleanTests() {
         System.out.println("Running boolean tests...");
         boolean x, y, z;
@@ -182,7 +195,7 @@ public class BasicTests extends BasicParent {
         z = x ? y : true;
         Assert.assertEquals(false, z);
     }
-    
+
     private void floatingArithmeticsTests() {
         System.out.println("Running floating arithmetic tests...");
         double x, y, z;
@@ -191,23 +204,23 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(-5.0, y);
         x = 5.0;
         y = 3.0;
-        z = x+y;
+        z = x + y;
         Assert.assertEquals(8.0, z);
         x = 5.0;
         y = 3.0;
-        z = x-y;
+        z = x - y;
         Assert.assertEquals(2.0, z);
         x = 5.0;
         y = 3.0;
-        z = x*y;
+        z = x * y;
         Assert.assertEquals(15.0, z);
         x = 6.0;
         y = 3.0;
-        z = x/y;
+        z = x / y;
         Assert.assertEquals(2.0, z);
         x = 5.0;
         y = 3.0;
-        z = x%y;
+        z = x % y;
         Assert.assertEquals(2.0, z);
         x = 5.0;
         y = x++;
@@ -227,9 +240,9 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(4.0, y);
         float f = 1.0f;
         x = 1.0;
-        Assert.assertEquals(x, (double)f);
+        Assert.assertEquals(x, (double) f);
     }
-    
+
     private void assignmentTests() {
         System.out.println("Running assignment tests...");
         int x, y;
@@ -281,7 +294,7 @@ public class BasicTests extends BasicParent {
         y |= x;
         Assert.assertEquals(12, y);
     }
-    
+
     private void relationTests() {
         System.out.println("Running relation tests...");
         int x, y;
@@ -303,7 +316,7 @@ public class BasicTests extends BasicParent {
         z = this instanceof Object;
         Assert.assertEquals(true, z);
     }
-    
+
     private void accessTests() {
         System.out.println("Running access tests...");
         Assert.assertEquals(42, field);
@@ -323,7 +336,7 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(1, ETest.VAL1.getV());
         Assert.assertEquals(2, ETest.VAL2.getV());
     }
-    
+
     private void invocationTests() {
         System.out.println("Running invocation tests...");
         Assert.assertEquals(19, testMethod2());
@@ -334,12 +347,126 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(23, BasicParent.testMethod3());
         Assert.assertEquals(13, BasicTests.super.testMethod1());
     }
-    
+
+    private void statementTests() {
+        System.out.println("Running statement tests...");
+        if (false) {
+            Assert.fail("No single if");
+        }
+
+        if (false) {
+            Assert.fail("No if else");
+        } else {
+            Assert.assertTrue("If else", true);
+        }
+
+        int i = 0;
+
+        if (i == 0) {
+            Assert.assertTrue("If else", true);
+        } else if (i == 1) {
+            Assert.fail("No else if");
+        } else {
+            Assert.fail("No if else");
+        }
+
+        while (i < 10) {
+            i++;
+        }
+        Assert.assertEquals(10, i);
+        for (int j = 0; j < 10; j++) {
+            i++;
+        }
+        Assert.assertEquals(20, i);
+
+        i = 10;
+        do {
+            i++;
+        } while (i < 10);
+        Assert.assertEquals(11, i);
+
+        i = 0;
+top:
+        {
+            for (int j = 0; j < 10; j++) {
+inner:
+                {
+                    for (int k = 0; k < 10; k++) {
+                        if (k == 5) {
+                            break top;
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+        Assert.assertEquals(5, i);
+        i = 0;
+        for (int k = 0; k < 10; k++) {
+            if (k > 5) {
+                continue;
+            }
+            i++;
+        }
+        Assert.assertEquals(6, i);
+        i = 0;
+        int[] iar = new int[]{0, 1, 2, 3, 4};
+        for (int j : iar) {
+            Assert.assertEquals(j, i);
+            i++;
+        }
+        Assert.assertEquals(5, i);
+        ETest et = ETest.VAL2;
+        boolean switched = false;
+        switch (et) {
+            case VAL1:
+                Assert.fail("Wrong switch case");
+                break;
+            case VAL2:
+            default:
+                switched = true;
+        }
+        Assert.assertTrue("Didn't switch", switched);
+        synchronized (this) {
+            Assert.assertTrue("Don't really see how check for a synchronized existence...check manually?", true);
+        }
+        boolean tried = false, caught = false, finallied = false;
+        try {
+            tried = true;
+            throw new TestException();
+        } catch (TestException ex) {
+            caught = true;
+        }
+        Assert.assertTrue("Didn't try", tried);
+        Assert.assertTrue("Didn't catch", caught);
+        Assert.assertFalse("Finallied??!?", finallied);
+
+        tried = false;
+        caught = false;
+        try {
+            tried = true;
+            if (tried) {
+                throw new TestException();
+            } else {
+                throw new TestException2();
+            }
+        } catch (TestException | TestException2 ex) {
+            caught = true;
+        } finally {
+            finallied = true;
+        }
+        Assert.assertTrue("Didn't try", tried);
+        Assert.assertTrue("Didn't catch", caught);
+        Assert.assertTrue("Didn't finally?", finallied);
+        // TODO try with resources
+
+    }
+
     @Override
     public int testMethod1() {
         return 17;
     }
-    
+
     @Override
     public int testMethod2() {
         return 19;

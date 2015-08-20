@@ -13,6 +13,7 @@
     <properties>
         <java.compiler.version>1.7</java.compiler.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <kompics.version>0.8.2-SNAPSHOT</kompics.version>
     </properties>
 
     <dependencies>
@@ -36,6 +37,17 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>18.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.larskroll</groupId>
+            <artifactId>common-utils</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>se.sics.kompics</groupId>
+            <artifactId>kompics-core</artifactId>
+            <version>${kompics.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     

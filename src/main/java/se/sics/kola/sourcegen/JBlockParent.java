@@ -22,9 +22,19 @@ package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JAssignmentTarget;
 import com.sun.codemodel.JBlock;
+import com.sun.codemodel.JConditional;
+import com.sun.codemodel.JDoLoop;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JExpressionStatement;
+import com.sun.codemodel.JForEach;
+import com.sun.codemodel.JForLoop;
 import com.sun.codemodel.JInvocation;
+import com.sun.codemodel.JLabel;
+import com.sun.codemodel.JSwitch;
+import com.sun.codemodel.JSynchronized;
+import com.sun.codemodel.JTryBlock;
+import com.sun.codemodel.JType;
+import com.sun.codemodel.JWhileLoop;
 
 /**
  *
@@ -74,4 +84,78 @@ class JBlockParent implements StatementAdapter.StatementParent {
         block.add(stmt);
     }
 
+    @Override
+    public JBlock addSubBlock() {
+        return block.block();
+    }
+    
+    @Override
+    public JLabel createLabel(String name) {
+        return block.label(name);
+    }
+    
+    @Override
+    public JConditional _if(JExpression exp) {
+        return block._if(exp);
+    }
+    
+    @Override
+    public JWhileLoop _while(JExpression exp) {
+        return block._while(exp);
+    }
+    
+    @Override
+    public JDoLoop _do(JExpression exp) {
+        return block._do(exp);
+    }
+    
+    @Override
+    public JForLoop _for() {
+        return block._for();
+    }
+    
+    @Override
+    public JForEach forEach(JType type, String id, JExpression iterable) {
+        return block.forEach(type, id, iterable);
+    }
+    
+    @Override
+    public JSwitch _switch(JExpression test) {
+        return block._switch(test);
+    }
+
+    @Override
+    public void _break() {
+        block._break();
+    }
+
+    @Override
+    public void _break(JLabel label) {
+        block._break(label);
+    }
+
+    @Override
+    public void _continue() {
+        block._continue();
+    }
+
+    @Override
+    public void _continue(JLabel label) {
+        block._continue(label);
+    }
+
+    @Override
+    public JSynchronized _synchronized(JExpression expr) {
+        return block._synchronized(expr);
+    }
+
+    @Override
+    public JTryBlock _try() {
+        return block._try();
+    }
+
+    @Override
+    public void _throw(JExpression exp) {
+        block._throw(exp);
+    }
 }

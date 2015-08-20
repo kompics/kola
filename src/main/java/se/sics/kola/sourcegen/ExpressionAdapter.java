@@ -71,6 +71,7 @@ import se.sics.kola.node.APostDecrExpressionNoName;
 import se.sics.kola.node.APostIncExpressionNoName;
 import se.sics.kola.node.APreDecrExpressionNoName;
 import se.sics.kola.node.APreIncExpressionNoName;
+import se.sics.kola.node.APrimaryClassInstanceCreationExpression;
 import se.sics.kola.node.APrimaryFieldAccess;
 import se.sics.kola.node.APrimaryMethodInvocation;
 import se.sics.kola.node.APrimitiveArrayCreationExpression;
@@ -162,6 +163,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
             ArgumentAdapter aa = new ArgumentAdapter(ia, context);
             arg.apply(aa);
         }
+        parent.addInvocation(inv);
         expr = inv;
     }
 
@@ -179,6 +181,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
                 arg.apply(aa);
             }
             expr = inv;
+            parent.addInvocation(inv);
         } catch (ClassNotFoundException ex) {
             AName aname = (AName) acname.getName();
             Logger.error(aname.getIdentifier().peekFirst(), "Could not find type: " + name);
@@ -236,10 +239,41 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         JInvocation inv = JExpr._new(ctype);
         Argumentable ia = new InvocationArgumentable(inv);
         expr = inv;
+        parent.addInvocation(inv);
         for (PArgument arg : node.getArgument()) {
             ArgumentAdapter aa = new ArgumentAdapter(ia, context);
             arg.apply(aa);
         }
+    }
+    
+    @Override
+    public void caseAPrimaryClassInstanceCreationExpression(APrimaryClassInstanceCreationExpression node) {
+        throw new UnsupportedOperationException("CodeModel doesn't suppport primary class instance creation, yet");
+//        JClass ctype;
+//        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+//        node.getExpressionNoName().apply(ea);
+//        JInvocation inv = ea.expr.
+//        if (node.getTypeArgumentsOrDiamond() != null) {
+//            TypeDiamondAdapter tda = new TypeDiamondAdapter(ctype);
+//            node.getTypeArgumentsOrDiamond().apply(tda);
+//            ctype = tda.ctype;
+//        }
+//        // ***** ANON *****
+//        if (node.getClassBody() != null) {
+//            JDefinedClass jdclass = context.unit.anonymousClass(ctype);
+//            ClassBodyAdapter cba = new ClassBodyAdapter(context, jdclass);
+//            node.getClassBody().apply(cba);
+//            ctype = jdclass;
+//        }
+//        // ***** ARGS *******
+//        JInvocation inv = JExpr._new(ctype);
+//        Argumentable ia = new InvocationArgumentable(inv);
+//        expr = inv;
+//        parent.addInvocation(inv);
+//        for (PArgument arg : node.getArgument()) {
+//            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
+//            arg.apply(aa);
+//        }
     }
 
     @Override
@@ -373,28 +407,36 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     public void caseAPostIncExpressionNoName(APostIncExpressionNoName node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpression().apply(ea);
-        expr = ea.expr.incr();
+        JExpressionStatement jes = JExpr.incr(ea.expr);
+        parent.addStatement(jes);
+        expr = jes;
     }
 
     @Override
     public void caseAPostDecrExpressionNoName(APostDecrExpressionNoName node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpression().apply(ea);
-        expr = ea.expr.decr();
+        JExpressionStatement jes = JExpr.decr(ea.expr);
+        parent.addStatement(jes);
+        expr = jes;
     }
 
     @Override
     public void caseAPreIncExpressionNoName(APreIncExpressionNoName node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpression().apply(ea);
-        expr = ea.expr.preincr();
+        JExpressionStatement jes = JExpr.preincr(ea.expr);
+        parent.addStatement(jes);
+        expr = jes;
     }
 
     @Override
     public void caseAPreDecrExpressionNoName(APreDecrExpressionNoName node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getExpression().apply(ea);
-        expr = ea.expr.predecr();
+        JExpressionStatement jes = JExpr.predecr(ea.expr);
+        parent.addStatement(jes);
+        expr = jes;
     }
 
     ////////////////////////// Bitwise ///////////////////////////

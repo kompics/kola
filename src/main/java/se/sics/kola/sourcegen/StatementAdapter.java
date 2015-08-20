@@ -20,12 +20,57 @@
  */
 package se.sics.kola.sourcegen;
 
+import com.google.common.base.Optional;
+import com.sun.codemodel.JBlock;
+import com.sun.codemodel.JCase;
+import com.sun.codemodel.JConditional;
+import com.sun.codemodel.JDoLoop;
 import com.sun.codemodel.JExpression;
+import com.sun.codemodel.JForEach;
+import com.sun.codemodel.JForLoop;
+import com.sun.codemodel.JLabel;
 import com.sun.codemodel.JStatement;
+import com.sun.codemodel.JSwitch;
+import com.sun.codemodel.JSynchronized;
+import com.sun.codemodel.JTryBlock;
+import com.sun.codemodel.JType;
+import com.sun.codemodel.JWhileLoop;
+import java.util.LinkedList;
+import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
+import se.sics.kola.node.ABlockStatementWithoutTrailingSubstatement;
+import se.sics.kola.node.ABreakStatement;
+import se.sics.kola.node.ACatchTryStatement;
+import se.sics.kola.node.AContinueStatement;
+import se.sics.kola.node.ADoStatement;
+import se.sics.kola.node.AEnhancedForStatement;
+import se.sics.kola.node.AExpressionBasicForStatement;
 import se.sics.kola.node.AExpressionReturnStatement;
+import se.sics.kola.node.AFinallyTryStatement;
+import se.sics.kola.node.AFormalParameter;
+import se.sics.kola.node.AIfThenElseStatement;
+import se.sics.kola.node.AIfThenStatement;
+import se.sics.kola.node.ALabeledStatement;
+import se.sics.kola.node.ANameBasicForStatement;
 import se.sics.kola.node.AStatementExpression;
+import se.sics.kola.node.ASwitchBlock;
+import se.sics.kola.node.ASwitchBlockStatementGroup;
+import se.sics.kola.node.ASwitchStatement;
+import se.sics.kola.node.ASynchronizedStatement;
+import se.sics.kola.node.AThrowStatement;
+import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.node.AVoidReturnStatement;
+import se.sics.kola.node.AWhileStatement;
+import se.sics.kola.node.Node;
+import se.sics.kola.node.PBlock;
+import se.sics.kola.node.PBlockStatement;
+import se.sics.kola.node.PCatchClause;
+import se.sics.kola.node.PFinally;
+import se.sics.kola.node.PForInit;
+import se.sics.kola.node.PForUpdate;
+import se.sics.kola.node.PStatement;
+import se.sics.kola.node.PSwitchBlockStatementGroup;
+import se.sics.kola.node.PSwitchLabel;
 import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
 
@@ -37,7 +82,6 @@ public class StatementAdapter extends DepthFirstAdapter {
 
     private final StatementParent parent;
     private final ResolutionContext context;
-    JStatement statement;
 
     StatementAdapter(StatementParent parent, ResolutionContext context) {
         this.parent = parent;
@@ -62,10 +106,301 @@ public class StatementAdapter extends DepthFirstAdapter {
         parent._return();
     }
 
+    @Override
+    public void caseABlockStatementWithoutTrailingSubstatement(ABlockStatementWithoutTrailingSubstatement node) {
+        JBlock block = parent.addSubBlock();
+        BlockStatementAdapter bsa = new BlockStatementAdapter(context, block);
+        node.apply(bsa);
+    }
+
+    @Override
+    public void caseALabeledStatement(ALabeledStatement node) {
+        String labelName = node.getIdentifier().getText();
+        JLabel label = parent.createLabel(labelName);
+        context.pushLevel();
+        context.addLabel(labelName, label);
+        StatementAdapter sa = new StatementAdapter(parent, context);
+        node.getStatement().apply(sa);
+        context.popLevel();
+    }
+
+    @Override
+    public void caseAIfThenStatement(AIfThenStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getCond().apply(ea);
+        JConditional cond = parent._if(ea.expr);
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getThen().apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+        if (stmt instanceof JBlock) {
+            JBlock stmtBlock = (JBlock) stmt;
+            stmtBlock.setNewlineRequired(false);
+        }
+        cond.setThen(stmt);
+    }
+
+    @Override
+    public void caseAIfThenElseStatement(AIfThenElseStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getCond().apply(ea);
+        JConditional cond = parent._if(ea.expr);
+
+        // THEN
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getThen().apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+        if (stmt instanceof JBlock) {
+            JBlock stmtBlock = (JBlock) stmt;
+            stmtBlock.setNewlineRequired(false);
+        }
+        cond.setThen(stmt);
+
+        // ELSE
+        tmpBlock = new JBlock();
+        sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getElse().apply(sa);
+        stmt = (JStatement) tmpBlock.getContents().get(0);
+        if (stmt instanceof JBlock) {
+            JBlock stmtBlock = (JBlock) stmt;
+            stmtBlock.setNewlineRequired(false);
+        }
+        cond.setElse(stmt);
+    }
+
+    @Override
+    public void caseAWhileStatement(AWhileStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getCond().apply(ea);
+        JWhileLoop wl = parent._while(ea.expr);
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getDo().apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+        wl.setBody(stmt);
+    }
+
+    @Override
+    public void caseADoStatement(ADoStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getCond().apply(ea);
+        JDoLoop wl = parent._do(ea.expr);
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getDo().apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+        if (stmt instanceof JBlock) {
+            JBlock stmtBlock = (JBlock) stmt;
+            stmtBlock.setNewlineRequired(false);
+        }
+        wl.setBody(stmt);
+    }
+
+    @Override
+    public void caseAExpressionBasicForStatement(AExpressionBasicForStatement node) {
+        basicForStatement(node.getInit(), node.getCond(), node.getUpdate(), node.getDo());
+    }
+
+    @Override
+    public void caseANameBasicForStatement(ANameBasicForStatement node) {
+        basicForStatement(node.getInit(), node.getCond(), node.getUpdate(), node.getDo());
+    }
+
+    private void basicForStatement(PForInit init, Node cond, PForUpdate update, PStatement _do) {
+        JForLoop loop = parent._for();
+        if (init != null) {
+            ForInitAdapter fia = new ForInitAdapter(loop, context);
+            init.apply(fia);
+        }
+        if (update != null) {
+            ForUpdateAdapter fua = new ForUpdateAdapter(loop, context);
+            update.apply(fua);
+        }
+        if (cond != null) {
+            ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+            cond.apply(ea);
+            loop.test(ea.expr);
+        }
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        _do.apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+        if (stmt instanceof JBlock) {
+            JBlock stmtBlock = (JBlock) stmt;
+            stmtBlock.setNewlineRequired(false);
+        }
+        loop.setBody(stmt);
+    }
+
+    @Override
+    public void caseAEnhancedForStatement(AEnhancedForStatement node) {
+        // Formal Parameter
+        AFormalParameter paramNode = (AFormalParameter) node.getVariable();
+        BodyAdapter.FormalParameter param = new BodyAdapter.FormalParameter();
+        FieldModifierAdapter fma = new FieldModifierAdapter();
+        paramNode.apply(fma);
+        param.mods = fma.getMods();
+        TypeAdapter ta = new TypeAdapter(context);
+        paramNode.getType().apply(ta);
+        param.type = ta.type;
+        AVariableDeclaratorId avdid = (AVariableDeclaratorId) paramNode.getVariableDeclaratorId();
+        param.id = avdid.getIdentifier().getText();
+        param.dim = avdid.getDim().size();
+
+        // Iterable
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getIterable().apply(ea);
+
+        // Do
+        JBlock tmpBlock = new JBlock();
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        node.getDo().apply(sa);
+        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+//        if (stmt instanceof JBlock) {
+//            JBlock stmtBlock = (JBlock) stmt;
+//            stmtBlock.setNewlineRequired(false);
+//        }
+        JForEach loop = parent.forEach(param.type, param.id, ea.expr);
+        loop.setBody(stmt);
+    }
+
+    @Override
+    public void caseASwitchStatement(ASwitchStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getTarget().apply(ea);
+        JSwitch sw = parent._switch(ea.expr);
+
+        ASwitchBlock sblock = (ASwitchBlock) node.getSwitchBlock();
+        for (PSwitchBlockStatementGroup pgroup : sblock.getSwitchBlockStatementGroup()) {
+            ASwitchBlockStatementGroup agroup = (ASwitchBlockStatementGroup) pgroup;
+            JCase lastCase = null;
+            for (PSwitchLabel plabel : agroup.getSwitchLabel()) {
+                SwitchLabelAdapter sla = new SwitchLabelAdapter(sw, context);
+                plabel.apply(sla);
+                lastCase = sla._case;
+            }
+            if (lastCase != null) {
+                for (PBlockStatement stmt : agroup.getBlockStatement()) {
+                    BlockStatementAdapter bsa = new BlockStatementAdapter(context, lastCase.body());
+                    stmt.apply(bsa);
+                }
+            }
+        }
+        for (PSwitchLabel plabel : sblock.getSwitchLabel()) {
+            SwitchLabelAdapter sla = new SwitchLabelAdapter(sw, context);
+            plabel.apply(sla);
+        }
+    }
+    
+    @Override
+    public void caseABreakStatement(ABreakStatement node) {
+        if (node.getIdentifier() != null) {
+            String id = node.getIdentifier().getText();
+            Optional<JLabel> olabel = context.findLabel(id);
+            if (olabel.isPresent()) {
+                parent._break(olabel.get());
+            } else {
+                Logger.error(node.getIdentifier(), "Couldn't find label for id. Skipping break target.");
+                parent._break();
+            }
+        } else {
+            parent._break();
+        }
+    }
+    
+    @Override
+    public void caseAContinueStatement(AContinueStatement node) {
+        if (node.getIdentifier() != null) {
+            String id = node.getIdentifier().getText();
+            Optional<JLabel> olabel = context.findLabel(id);
+            if (olabel.isPresent()) {
+                parent._continue(olabel.get());
+            } else {
+                Logger.error(node.getIdentifier(), "Couldn't find label for id. Skipping continue target.");
+                parent._continue();
+            }
+        } else {
+            parent._continue();
+        }
+    }
+    
+    @Override
+    public void caseASynchronizedStatement(ASynchronizedStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getLock().apply(ea);
+        JSynchronized syn = parent._synchronized(ea.expr);
+        BlockStatementAdapter bsa = new BlockStatementAdapter(context, syn.body());
+        node.getBlock().apply(bsa);
+    }
+    
+    @Override
+    public void caseACatchTryStatement(ACatchTryStatement node) {
+        basicTryCatchFinallyStatement(node.getBlock(), node.getCatchClause(), null);
+    }
+    
+    @Override
+    public void caseAFinallyTryStatement(AFinallyTryStatement node) {
+        basicTryCatchFinallyStatement(node.getBlock(), node.getCatchClause(), node.getFinally());
+    }
+
+    private void basicTryCatchFinallyStatement(PBlock pblock, LinkedList<PCatchClause> catchClauses, PFinally pFinally) {
+        JTryBlock tryBlock = parent._try();
+        // TryBlock
+        BlockStatementAdapter bsa = new BlockStatementAdapter(context, tryBlock.body());
+        pblock.apply(bsa);
+        // CatchBlocks
+        for (PCatchClause catchClause : catchClauses) {
+            CatchClauseAdapter cca = new CatchClauseAdapter(tryBlock, context);
+            catchClause.apply(cca);
+        }
+        if (pFinally != null) {
+            BlockStatementAdapter bsaf = new BlockStatementAdapter(context, tryBlock._finally());
+            pFinally.apply(bsaf);
+        }
+    }
+    
+    @Override
+    public void caseAThrowStatement(AThrowStatement node) {
+        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+        node.getThrowable().apply(ea);
+        parent._throw(ea.expr);
+    }
+
     public static interface StatementParent extends ExpressionParent {
 
         public void _return();
 
         public void _return(JExpression expr);
+
+        public JBlock addSubBlock();
+
+        public JLabel createLabel(String name);
+
+        public JConditional _if(JExpression exp);
+
+        public JWhileLoop _while(JExpression exp);
+
+        public JDoLoop _do(JExpression exp);
+
+        public JForLoop _for();
+
+        public JForEach forEach(JType type, String id, JExpression iterable);
+
+        public JSwitch _switch(JExpression test);
+        
+        public void _break();
+        
+        public void _break(JLabel label);
+        
+        public void _continue();
+        
+        public void _continue(JLabel label);
+
+        public JSynchronized _synchronized(JExpression expr);
+        
+        public JTryBlock _try();
+        
+        public void _throw(JExpression exp);
     }
 }

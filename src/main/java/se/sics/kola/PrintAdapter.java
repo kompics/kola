@@ -49,13 +49,16 @@ public class PrintAdapter extends DepthFirstAdapter {
         depth++;
         for (Token t : findTokenChildren(node)) {
             space();
-            sb.append(t.getText());
-            sb.append("@[");
-            sb.append(t.getLine());
-            sb.append(',');
-            sb.append(t.getPos());
-            sb.append("]");
-
+            if (t != null) {
+                sb.append(t.getText());
+                sb.append("@[");
+                sb.append(t.getLine());
+                sb.append(',');
+                sb.append(t.getPos());
+                sb.append("]");
+            } else {
+                sb.append("null@???");
+            }
             sb.append('\n');
         }
         if (node instanceof AName) {
