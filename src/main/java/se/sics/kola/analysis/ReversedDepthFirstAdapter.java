@@ -5828,10 +5828,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
                 e.apply(this);
             }
         }
-        if(node.getVariableDeclaratorId() != null)
-        {
-            node.getVariableDeclaratorId().apply(this);
-        }
         if(node.getBlock() != null)
         {
             node.getBlock().apply(this);

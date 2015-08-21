@@ -1406,7 +1406,7 @@ Productions
     finally_keyword block {-> New finally(block.block)};
 
   try_with_resources_statement {-> try_with_resources_statement} =
-    try_keyword resource_specification block variable_declarator_id catches? finally? {-> New try_with_resources_statement(resource_specification.resource_specification, block.block, variable_declarator_id, [catches.catch_clause], finally.finally)};
+    try_keyword resource_specification block catches? finally? {-> New try_with_resources_statement(resource_specification.resource_specification, block.block, [catches.catch_clause], finally.finally)};
 
   resource_specification {-> resource_specification} =
     l_par resources semi? r_par {-> New resource_specification([resources.resource])};
@@ -2434,7 +2434,7 @@ catch_formal_parameter = modifier* [catch_types]:class_type+ variable_declarator
 
 finally = block;
 
-try_with_resources_statement = resource_specification block variable_declarator_id catch_clause* finally?;
+try_with_resources_statement = resource_specification block catch_clause* finally?;
 
 resource_specification = resource+;
 

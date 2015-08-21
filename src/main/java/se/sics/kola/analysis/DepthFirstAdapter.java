@@ -5748,10 +5748,6 @@ public class DepthFirstAdapter extends AnalysisAdapter
         {
             node.getBlock().apply(this);
         }
-        if(node.getVariableDeclaratorId() != null)
-        {
-            node.getVariableDeclaratorId().apply(this);
-        }
         {
             List<PCatchClause> copy = new ArrayList<PCatchClause>(node.getCatchClause());
             for(PCatchClause e : copy)

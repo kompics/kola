@@ -10,7 +10,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
 {
     private PResourceSpecification _resourceSpecification_;
     private PBlock _block_;
-    private PVariableDeclaratorId _variableDeclaratorId_;
     private final LinkedList<PCatchClause> _catchClause_ = new LinkedList<PCatchClause>();
     private PFinally _finally_;
 
@@ -22,7 +21,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
     public ATryWithResourcesStatement(
         @SuppressWarnings("hiding") PResourceSpecification _resourceSpecification_,
         @SuppressWarnings("hiding") PBlock _block_,
-        @SuppressWarnings("hiding") PVariableDeclaratorId _variableDeclaratorId_,
         @SuppressWarnings("hiding") List<?> _catchClause_,
         @SuppressWarnings("hiding") PFinally _finally_)
     {
@@ -30,8 +28,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         setResourceSpecification(_resourceSpecification_);
 
         setBlock(_block_);
-
-        setVariableDeclaratorId(_variableDeclaratorId_);
 
         setCatchClause(_catchClause_);
 
@@ -45,7 +41,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         return new ATryWithResourcesStatement(
             cloneNode(this._resourceSpecification_),
             cloneNode(this._block_),
-            cloneNode(this._variableDeclaratorId_),
             cloneList(this._catchClause_),
             cloneNode(this._finally_));
     }
@@ -106,31 +101,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         this._block_ = node;
     }
 
-    public PVariableDeclaratorId getVariableDeclaratorId()
-    {
-        return this._variableDeclaratorId_;
-    }
-
-    public void setVariableDeclaratorId(PVariableDeclaratorId node)
-    {
-        if(this._variableDeclaratorId_ != null)
-        {
-            this._variableDeclaratorId_.parent(null);
-        }
-
-        if(node != null)
-        {
-            if(node.parent() != null)
-            {
-                node.parent().removeChild(node);
-            }
-
-            node.parent(this);
-        }
-
-        this._variableDeclaratorId_ = node;
-    }
-
     public LinkedList<PCatchClause> getCatchClause()
     {
         return this._catchClause_;
@@ -188,7 +158,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         return ""
             + toString(this._resourceSpecification_)
             + toString(this._block_)
-            + toString(this._variableDeclaratorId_)
             + toString(this._catchClause_)
             + toString(this._finally_);
     }
@@ -206,12 +175,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         if(this._block_ == child)
         {
             this._block_ = null;
-            return;
-        }
-
-        if(this._variableDeclaratorId_ == child)
-        {
-            this._variableDeclaratorId_ = null;
             return;
         }
 
@@ -242,12 +205,6 @@ public final class ATryWithResourcesStatement extends PTryWithResourcesStatement
         if(this._block_ == oldChild)
         {
             setBlock((PBlock) newChild);
-            return;
-        }
-
-        if(this._variableDeclaratorId_ == oldChild)
-        {
-            setVariableDeclaratorId((PVariableDeclaratorId) newChild);
             return;
         }
 
