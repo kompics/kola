@@ -23,7 +23,6 @@ package se.sics.kola.sourcegen;
 import com.sun.codemodel.JClass;
 import java.util.LinkedList;
 import se.sics.kola.Logger;
-import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassArrayType;
 import se.sics.kola.node.AClassOrInterfaceType;
@@ -33,6 +32,7 @@ import se.sics.kola.node.APrimitiveArrayType;
 import se.sics.kola.node.ASuperWildcardBounds;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.PTypeArguments;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -41,11 +41,11 @@ import se.sics.kola.node.PTypeArguments;
 public class TypeArgumentAdapter extends DepthFirstAdapter {
 
     private ResolutionContext context;
-    private JClass type;
+    JClass type;
 
-    TypeArgumentAdapter(ResolutionContext context, JClass type) {
+    TypeArgumentAdapter(ResolutionContext context) {
         this.context = context;
-        this.type = type;
+        //this.type = type;
     }
     
     @Override
@@ -80,8 +80,9 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (Util.IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -91,10 +92,12 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
+        type = ctype;
     }
     
     @Override

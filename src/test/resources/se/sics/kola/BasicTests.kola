@@ -77,6 +77,41 @@ class TestException2 extends Exception {
 
 }
 
+class TestClose implements AutoCloseable {
+
+    boolean closed = false;
+
+    @Override
+    public void close() {
+        closed = true;
+    }
+
+}
+
+class TestClose2 implements AutoCloseable {
+
+    boolean closed = false;
+
+    @Override
+    public void close() {
+        closed = true;
+    }
+
+}
+
+class GenericTest<X extends TestClose> {
+    
+    private X c;
+    
+    public void setClose(X c) {
+        this.c = c;
+    }
+    
+    public X getClose() {
+        return c;
+    }
+}
+
 /**
  *
  * @author lkroll
@@ -335,6 +370,13 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(12, ia[0]);
         Assert.assertEquals(1, ETest.VAL1.getV());
         Assert.assertEquals(2, ETest.VAL2.getV());
+        TestClose tc = new TestClose();
+        tc.close();
+        Assert.assertTrue("TestClose wasn't closed!", tc.closed);
+        GenericTest<TestClose> gt = new GenericTest<>();
+        gt.setClose(tc);
+        TestClose tc2 = gt.getClose();
+        Assert.assertEquals(tc, tc2);
     }
 
     private void invocationTests() {
@@ -459,7 +501,15 @@ inner:
         Assert.assertTrue("Didn't catch", caught);
         Assert.assertTrue("Didn't finally?", finallied);
         // TODO try with resources
-
+        TestClose tc1ext;
+        TestClose2 tc2ext;
+        try (TestClose tc1 = new TestClose();
+                TestClose2 tc2 = new TestClose2()) {
+            tc1ext = tc1;
+            tc2ext = tc2;
+        }
+        Assert.assertTrue("#1 wasn't closed", tc1ext.closed);
+        Assert.assertTrue("#2 wasn't closed", tc2ext.closed);
     }
 
     @Override

@@ -20,51 +20,38 @@
  */
 package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JExpr;
-import com.sun.codemodel.JExpression;
-import se.sics.kola.Logger;
-import se.sics.kola.PrintAdapter;
+import com.sun.codemodel.JTryBlock;
 import se.sics.kola.analysis.DepthFirstAdapter;
-import se.sics.kola.node.AExpressionArgument;
-import se.sics.kola.node.ANameArgument;
+import se.sics.kola.node.AResource;
+import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
  * @author lkroll
  */
-public class ArgumentAdapter extends DepthFirstAdapter {
+public class ResourceAdapter extends DepthFirstAdapter {
 
-    private final Argumentable invocation;
     private final ResolutionContext context;
+    private final JTryBlock _try;
 
-    ArgumentAdapter(Argumentable invocation, ResolutionContext context) {
-        this.invocation = invocation;
+    ResourceAdapter(JTryBlock _try, ResolutionContext context) {
+        this._try = _try;
         this.context = context;
     }
-    
+
     @Override
-    public void caseANameArgument(ANameArgument node) {
-        //JFieldRef field = context.resolveField((AName) node.getName());
-        //invocation.arg(field);
-        invocation.arg(JExpr.direct(nameToString(node.getName())));
-    }
-    
-    @Override
-    public void caseAExpressionArgument(AExpressionArgument node) {
+    public void caseAResource(AResource node) {
+        FieldModifierAdapter fma = new FieldModifierAdapter();
+        node.apply(fma);
+        int mods = fma.getMods();
+        TypeAdapter ta = new TypeAdapter(context);
+        node.apply(ta);
+
+        AVariableDeclaratorId avdid = (AVariableDeclaratorId) node.getVariableDeclaratorId();
+        String id = avdid.getIdentifier().getText();
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getExpressionNoName().apply(ea);
-        if (ea.expr == null) {
-            PrintAdapter pa = new PrintAdapter();
-            node.getExpressionNoName().apply(pa);
-            Logger.error("Couldn't generate expression from this subtree:\n"+pa.toString());
-            System.exit(1);
-        }
-        invocation.arg(ea.expr);
-    }
-    
-    static interface Argumentable {
-        public Argumentable arg(JExpression expr);
+        node.apply(ea);
+        _try.resource(mods, ta.type, id, ea.expr);
     }
 }

@@ -52,12 +52,15 @@ import se.sics.kola.node.AIfThenElseStatement;
 import se.sics.kola.node.AIfThenStatement;
 import se.sics.kola.node.ALabeledStatement;
 import se.sics.kola.node.ANameBasicForStatement;
+import se.sics.kola.node.AResourceSpecification;
+import se.sics.kola.node.AResourcesTryStatement;
 import se.sics.kola.node.AStatementExpression;
 import se.sics.kola.node.ASwitchBlock;
 import se.sics.kola.node.ASwitchBlockStatementGroup;
 import se.sics.kola.node.ASwitchStatement;
 import se.sics.kola.node.ASynchronizedStatement;
 import se.sics.kola.node.AThrowStatement;
+import se.sics.kola.node.ATryWithResourcesStatement;
 import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.node.AVoidReturnStatement;
 import se.sics.kola.node.AWhileStatement;
@@ -68,6 +71,8 @@ import se.sics.kola.node.PCatchClause;
 import se.sics.kola.node.PFinally;
 import se.sics.kola.node.PForInit;
 import se.sics.kola.node.PForUpdate;
+import se.sics.kola.node.PResource;
+import se.sics.kola.node.PResourceSpecification;
 import se.sics.kola.node.PStatement;
 import se.sics.kola.node.PSwitchBlockStatementGroup;
 import se.sics.kola.node.PSwitchLabel;
@@ -336,16 +341,24 @@ public class StatementAdapter extends DepthFirstAdapter {
     
     @Override
     public void caseACatchTryStatement(ACatchTryStatement node) {
-        basicTryCatchFinallyStatement(node.getBlock(), node.getCatchClause(), null);
+        tryCatchFinallyStatement(null, node.getBlock(), node.getCatchClause(), null);
     }
     
     @Override
     public void caseAFinallyTryStatement(AFinallyTryStatement node) {
-        basicTryCatchFinallyStatement(node.getBlock(), node.getCatchClause(), node.getFinally());
+        tryCatchFinallyStatement(null, node.getBlock(), node.getCatchClause(), node.getFinally());
     }
 
-    private void basicTryCatchFinallyStatement(PBlock pblock, LinkedList<PCatchClause> catchClauses, PFinally pFinally) {
+    private void tryCatchFinallyStatement(PResourceSpecification res, PBlock pblock, LinkedList<PCatchClause> catchClauses, PFinally pFinally) {
         JTryBlock tryBlock = parent._try();
+        // Resources
+        if (res != null) {
+            AResourceSpecification ares = (AResourceSpecification) res;
+            for (PResource r : ares.getResource()) {
+                ResourceAdapter ra = new ResourceAdapter(tryBlock, context);
+                r.apply(ra);
+            }
+        }
         // TryBlock
         BlockStatementAdapter bsa = new BlockStatementAdapter(context, tryBlock.body());
         pblock.apply(bsa);
@@ -365,6 +378,12 @@ public class StatementAdapter extends DepthFirstAdapter {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getThrowable().apply(ea);
         parent._throw(ea.expr);
+    }
+    
+    @Override
+    public void caseAResourcesTryStatement(AResourcesTryStatement node) {
+        ATryWithResourcesStatement twrs = (ATryWithResourcesStatement) node.getTryWithResourcesStatement();
+        tryCatchFinallyStatement(twrs.getResourceSpecification(), twrs.getBlock(), twrs.getCatchClause(), twrs.getFinally());
     }
 
     public static interface StatementParent extends ExpressionParent {

@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -55,6 +56,8 @@ import se.sics.kola.sourcegen.JavaSourceGenerator;
  * @author lkroll
  */
 public class Main {
+    
+    private final static AtomicBoolean parsingError = new AtomicBoolean(false);
 
     public static void main(String[] args) {
 
@@ -99,6 +102,11 @@ public class Main {
             stop_time = System.currentTimeMillis();
             System.out.println("Parsed all files in " + (stop_time - start_time) + "ms.");
 
+            if (parsingError.get()) {
+                System.err.println("Errors occurred during parsing stage. Exiting...");
+                System.exit(1);
+            }
+            
             for (Entry<File, Start> e : starts.entrySet()) {
                 System.out.println("Analysing AST for " + e.getKey());
                 Start ast = e.getValue();
@@ -139,9 +147,32 @@ public class Main {
 
             Start ast = parser.parse();
             return ast;
-        } catch (ParserException | LexerException | IOException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace(System.err);
+        } catch (ParserException ex) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("There was an error parsing ");
+            sb.append(f.getName());
+            sb.append(".\n  Found: \'");
+            sb.append(ex.getToken().getText());
+            sb.append("\'\n");
+            sb.append(ex.getMessage());
+            Logger.error(ex.getToken(), sb.toString());
+            parsingError.set(true);
+            return null;
+        } catch (LexerException ex) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("There was an error tokenizing ");
+            sb.append(f.getName());
+            sb.append(".\n  Found: \'");
+            sb.append(ex.getToken().getText());
+            sb.append("\'\n");
+            sb.append(ex.getMessage());
+            Logger.error(ex.getToken(), sb.toString());
+            parsingError.set(true);
+            return null;
+        } catch (IOException ex) {
+            //System.err.println(e.getMessage());
+            parsingError.set(true);
+            ex.printStackTrace(System.err);
             return null;
         }
     }

@@ -21,10 +21,10 @@
 package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import se.sics.kola.Logger;
-import se.sics.kola.sourcegen.Util.IdWithOptArgs;
-import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AGtTypeArguments;
 import se.sics.kola.node.AName;
@@ -32,6 +32,8 @@ import se.sics.kola.node.AShrTypeArguments;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.AUshrTypeArguments;
 import se.sics.kola.node.PTypeArgument;
+import se.sics.kola.sourcegen.Util.IdWithOptArgs;
+import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -39,18 +41,19 @@ import se.sics.kola.node.PTypeArgument;
  */
 class TypeArgumentsAdapter extends DepthFirstAdapter {
     private ResolutionContext context;
-    private JClass type;
+    //private JClass type;
+    List<JClass> narrows = new ArrayList<JClass>();
     
-    TypeArgumentsAdapter(ResolutionContext context, JClass type) {
+    TypeArgumentsAdapter(ResolutionContext context) {
         this.context = context;
-        this.type = type;
     }
     
     @Override
     public void caseAGtTypeArguments(AGtTypeArguments node) {
         for (PTypeArgument arg : node.getTypeArgument()) {
-            TypeArgumentAdapter taa = new TypeArgumentAdapter(context, type);
+            TypeArgumentAdapter taa = new TypeArgumentAdapter(context);
             arg.apply(taa);
+            narrows.add(taa.type);
         }
     }
     
@@ -58,8 +61,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
     public void caseAShrTypeArguments(AShrTypeArguments node) {
         // TA1s
         for (PTypeArgument arg : node.getTa1s()) {
-            TypeArgumentAdapter taa = new TypeArgumentAdapter(context, type);
+            TypeArgumentAdapter taa = new TypeArgumentAdapter(context);
             arg.apply(taa);
+            narrows.add(taa.type);
         }
         // TypeDecSpec
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
@@ -77,8 +81,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -88,24 +93,29 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
         // TA2s
+        List<JClass> narrows2 = new ArrayList<JClass>();
         for (PTypeArgument arg : node.getTa2s()) {
-            TypeArgumentAdapter taa = new TypeArgumentAdapter(context, ctype);
+            TypeArgumentAdapter taa = new TypeArgumentAdapter(context);
             arg.apply(taa);
+            narrows2.add(taa.type);
         }
-        type = type.narrow(ctype);
+        ctype = ctype.narrow(narrows2);
+        narrows.add(ctype);
     }
     
     @Override
     public void caseAUshrTypeArguments(AUshrTypeArguments node) {
         // TA1s
         for (PTypeArgument arg : node.getTa1s()) {
-            TypeArgumentAdapter taa = new TypeArgumentAdapter(context, type);
+            TypeArgumentAdapter taa = new TypeArgumentAdapter(context);
             arg.apply(taa);
+            narrows.add(taa.type);
         }
         // Spec1
         ATypeDeclSpecifier spec1 = (ATypeDeclSpecifier) node.getSpecifier1();
@@ -123,8 +133,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             cur = list1.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype1);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype1 = ctype1.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list1) {
             String cname = ctype1.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -134,14 +145,17 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype1);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype1 = ctype1.narrow(tpa.narrows);
             }
         }
         // TA2s
+        List<JClass> narrows2 = new ArrayList<JClass>();
         for (PTypeArgument arg : node.getTa2s()) {
-            TypeArgumentAdapter taa = new TypeArgumentAdapter(context, ctype1);
+            TypeArgumentAdapter taa = new TypeArgumentAdapter(context);
             arg.apply(taa);
+            narrows2.add(taa.type);
         }
         // Spec2
         ATypeDeclSpecifier spec2 = (ATypeDeclSpecifier) node.getSpecifier2();
@@ -158,8 +172,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             cur = list2.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype2);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype2 = ctype2.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list2) {
             String cname = ctype2.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -169,11 +184,13 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype2);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype2 = ctype2.narrow(tpa.narrows);
             }
         }
-        ctype1 = ctype1.narrow(ctype2);
-        type = type.narrow(ctype1);
+        narrows2.add(ctype2);
+        ctype1 = ctype1.narrow(narrows2);
+        narrows.add(ctype1);
     }
 }

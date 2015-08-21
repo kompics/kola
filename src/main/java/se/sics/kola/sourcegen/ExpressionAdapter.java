@@ -207,8 +207,9 @@ public class ExpressionAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (Util.IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -218,8 +219,9 @@ public class ExpressionAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
         // ****** END SPEC *******
@@ -624,7 +626,8 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     ////////////////////////// Expression ///////////////////////////
     @Override
     public void caseANameExpression(ANameExpression node) {
-        expr = context.resolveField((AName) node.getName());
+        //expr = context.resolveField((AName) node.getName());
+        expr = JExpr.direct(nameToString(node.getName()));
     }
 
     ////////////////////////// Literal ///////////////////////////
@@ -704,13 +707,14 @@ public class ExpressionAdapter extends DepthFirstAdapter {
 
         @Override
         public void caseATypeArgumentsTypeArgumentsOrDiamond(ATypeArgumentsTypeArgumentsOrDiamond node) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             node.getTypeArguments().apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
 
         @Override
         public void caseADiamondTypeArgumentsOrDiamond(ADiamondTypeArgumentsOrDiamond node) {
-            Logger.error("Diamond operator not yet supported by CodeModel. Ignoring...");
+            ctype = ctype.narrowDiamond();
         }
     }
 

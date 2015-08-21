@@ -132,8 +132,9 @@ class TypeAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -143,8 +144,9 @@ class TypeAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
         type = ctype;
@@ -172,8 +174,9 @@ class TypeAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -183,8 +186,9 @@ class TypeAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
         type = ctype;
@@ -212,8 +216,9 @@ class TypeAdapter extends DepthFirstAdapter {
             cur = list.pollFirst();
         }
         if (cur != null) {
-            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+            TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
             cur.args.apply(tpa);
+            ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
             String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
@@ -223,8 +228,9 @@ class TypeAdapter extends DepthFirstAdapter {
                 Logger.error("Couldn't resolve type: " + cname);
             }
             if (iwoa.args != null) {
-                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context, ctype);
+                TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
+                ctype = ctype.narrow(tpa.narrows);
             }
         }
         type = ctype;
