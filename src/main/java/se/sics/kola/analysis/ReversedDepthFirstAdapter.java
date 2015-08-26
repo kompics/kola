@@ -1171,6 +1171,342 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outATypeBound(node);
     }
 
+    public void inASubscribeKolaKeyword(ASubscribeKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outASubscribeKolaKeyword(ASubscribeKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseASubscribeKolaKeyword(ASubscribeKolaKeyword node)
+    {
+        inASubscribeKolaKeyword(node);
+        if(node.getSubscribeKeyword() != null)
+        {
+            node.getSubscribeKeyword().apply(this);
+        }
+        outASubscribeKolaKeyword(node);
+    }
+
+    public void inAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
+    {
+        inAUnsubscribeKolaKeyword(node);
+        if(node.getUnsubscribeKeyword() != null)
+        {
+            node.getUnsubscribeKeyword().apply(this);
+        }
+        outAUnsubscribeKolaKeyword(node);
+    }
+
+    public void inAConnectKolaKeyword(AConnectKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAConnectKolaKeyword(AConnectKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAConnectKolaKeyword(AConnectKolaKeyword node)
+    {
+        inAConnectKolaKeyword(node);
+        if(node.getConnectKeyword() != null)
+        {
+            node.getConnectKeyword().apply(this);
+        }
+        outAConnectKolaKeyword(node);
+    }
+
+    public void inADisconnectKolaKeyword(ADisconnectKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outADisconnectKolaKeyword(ADisconnectKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node)
+    {
+        inADisconnectKolaKeyword(node);
+        if(node.getDisconnectKeyword() != null)
+        {
+            node.getDisconnectKeyword().apply(this);
+        }
+        outADisconnectKolaKeyword(node);
+    }
+
+    public void inATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        inATriggerKolaKeyword(node);
+        if(node.getTriggerKeyword() != null)
+        {
+            node.getTriggerKeyword().apply(this);
+        }
+        outATriggerKolaKeyword(node);
+    }
+
+    public void inAInitKolaKeyword(AInitKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAInitKolaKeyword(AInitKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAInitKolaKeyword(AInitKolaKeyword node)
+    {
+        inAInitKolaKeyword(node);
+        if(node.getInitKeyword() != null)
+        {
+            node.getInitKeyword().apply(this);
+        }
+        outAInitKolaKeyword(node);
+    }
+
+    public void inARequestKolaKeyword(ARequestKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outARequestKolaKeyword(ARequestKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseARequestKolaKeyword(ARequestKolaKeyword node)
+    {
+        inARequestKolaKeyword(node);
+        if(node.getRequestKeyword() != null)
+        {
+            node.getRequestKeyword().apply(this);
+        }
+        outARequestKolaKeyword(node);
+    }
+
+    public void inAIndicationKolaKeyword(AIndicationKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAIndicationKolaKeyword(AIndicationKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAIndicationKolaKeyword(AIndicationKolaKeyword node)
+    {
+        inAIndicationKolaKeyword(node);
+        if(node.getIndicationKeyword() != null)
+        {
+            node.getIndicationKeyword().apply(this);
+        }
+        outAIndicationKolaKeyword(node);
+    }
+
+    public void inARequiresKolaKeyword(ARequiresKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outARequiresKolaKeyword(ARequiresKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseARequiresKolaKeyword(ARequiresKolaKeyword node)
+    {
+        inARequiresKolaKeyword(node);
+        if(node.getRequiresKeyword() != null)
+        {
+            node.getRequiresKeyword().apply(this);
+        }
+        outARequiresKolaKeyword(node);
+    }
+
+    public void inAProvidesKolaKeyword(AProvidesKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAProvidesKolaKeyword(AProvidesKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAProvidesKolaKeyword(AProvidesKolaKeyword node)
+    {
+        inAProvidesKolaKeyword(node);
+        if(node.getProvidesKeyword() != null)
+        {
+            node.getProvidesKeyword().apply(this);
+        }
+        outAProvidesKolaKeyword(node);
+    }
+
+    public void inAComponentKolaKeyword(AComponentKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAComponentKolaKeyword(AComponentKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAComponentKolaKeyword(AComponentKolaKeyword node)
+    {
+        inAComponentKolaKeyword(node);
+        if(node.getComponentKeyword() != null)
+        {
+            node.getComponentKeyword().apply(this);
+        }
+        outAComponentKolaKeyword(node);
+    }
+
+    public void inAComponentdefKolaKeyword(AComponentdefKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAComponentdefKolaKeyword(AComponentdefKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAComponentdefKolaKeyword(AComponentdefKolaKeyword node)
+    {
+        inAComponentdefKolaKeyword(node);
+        if(node.getComponentdefKeyword() != null)
+        {
+            node.getComponentdefKeyword().apply(this);
+        }
+        outAComponentdefKolaKeyword(node);
+    }
+
+    public void inAPortKolaKeyword(APortKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAPortKolaKeyword(APortKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAPortKolaKeyword(APortKolaKeyword node)
+    {
+        inAPortKolaKeyword(node);
+        if(node.getPortKeyword() != null)
+        {
+            node.getPortKeyword().apply(this);
+        }
+        outAPortKolaKeyword(node);
+    }
+
+    public void inAHandleKolaKeyword(AHandleKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAHandleKolaKeyword(AHandleKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAHandleKolaKeyword(AHandleKolaKeyword node)
+    {
+        inAHandleKolaKeyword(node);
+        if(node.getHandleKeyword() != null)
+        {
+            node.getHandleKeyword().apply(this);
+        }
+        outAHandleKolaKeyword(node);
+    }
+
+    public void inAHandlerKolaKeyword(AHandlerKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAHandlerKolaKeyword(AHandlerKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAHandlerKolaKeyword(AHandlerKolaKeyword node)
+    {
+        inAHandlerKolaKeyword(node);
+        if(node.getHandlerKeyword() != null)
+        {
+            node.getHandlerKeyword().apply(this);
+        }
+        outAHandlerKolaKeyword(node);
+    }
+
+    public void inAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        inAEventKolaKeyword(node);
+        if(node.getEventKeyword() != null)
+        {
+            node.getEventKeyword().apply(this);
+        }
+        outAEventKolaKeyword(node);
+    }
+
     public void inAPortDeclaration(APortDeclaration node)
     {
         defaultIn(node);
@@ -1229,6 +1565,10 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             {
                 e.apply(this);
             }
+        }
+        if(node.getParent() != null)
+        {
+            node.getParent().apply(this);
         }
         if(node.getHeaderFields() != null)
         {
@@ -6023,9 +6363,9 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
     public void caseATriggerStatement(ATriggerStatement node)
     {
         inATriggerStatement(node);
-        if(node.getPortId() != null)
+        if(node.getPort() != null)
         {
-            node.getPortId().apply(this);
+            node.getPort().apply(this);
         }
         if(node.getEvent() != null)
         {
@@ -7730,6 +8070,35 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getName().apply(this);
         }
         outATypeMethodInvocation(node);
+    }
+
+    public void inAKolaMethodInvocation(AKolaMethodInvocation node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAKolaMethodInvocation(AKolaMethodInvocation node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAKolaMethodInvocation(AKolaMethodInvocation node)
+    {
+        inAKolaMethodInvocation(node);
+        {
+            List<PArgument> copy = new ArrayList<PArgument>(node.getArgument());
+            Collections.reverse(copy);
+            for(PArgument e : copy)
+            {
+                e.apply(this);
+            }
+        }
+        if(node.getKolaKeyword() != null)
+        {
+            node.getKolaKeyword().apply(this);
+        }
+        outAKolaMethodInvocation(node);
     }
 
     public void inANewClassInstanceCreationExpression(ANewClassInstanceCreationExpression node)

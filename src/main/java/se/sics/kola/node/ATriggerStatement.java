@@ -8,7 +8,7 @@ import se.sics.kola.analysis.*;
 public final class ATriggerStatement extends PTriggerStatement
 {
     private PExpression _event_;
-    private TIdentifier _portId_;
+    private PExpression _port_;
 
     public ATriggerStatement()
     {
@@ -17,12 +17,12 @@ public final class ATriggerStatement extends PTriggerStatement
 
     public ATriggerStatement(
         @SuppressWarnings("hiding") PExpression _event_,
-        @SuppressWarnings("hiding") TIdentifier _portId_)
+        @SuppressWarnings("hiding") PExpression _port_)
     {
         // Constructor
         setEvent(_event_);
 
-        setPortId(_portId_);
+        setPort(_port_);
 
     }
 
@@ -31,7 +31,7 @@ public final class ATriggerStatement extends PTriggerStatement
     {
         return new ATriggerStatement(
             cloneNode(this._event_),
-            cloneNode(this._portId_));
+            cloneNode(this._port_));
     }
 
     @Override
@@ -65,16 +65,16 @@ public final class ATriggerStatement extends PTriggerStatement
         this._event_ = node;
     }
 
-    public TIdentifier getPortId()
+    public PExpression getPort()
     {
-        return this._portId_;
+        return this._port_;
     }
 
-    public void setPortId(TIdentifier node)
+    public void setPort(PExpression node)
     {
-        if(this._portId_ != null)
+        if(this._port_ != null)
         {
-            this._portId_.parent(null);
+            this._port_.parent(null);
         }
 
         if(node != null)
@@ -87,7 +87,7 @@ public final class ATriggerStatement extends PTriggerStatement
             node.parent(this);
         }
 
-        this._portId_ = node;
+        this._port_ = node;
     }
 
     @Override
@@ -95,7 +95,7 @@ public final class ATriggerStatement extends PTriggerStatement
     {
         return ""
             + toString(this._event_)
-            + toString(this._portId_);
+            + toString(this._port_);
     }
 
     @Override
@@ -108,9 +108,9 @@ public final class ATriggerStatement extends PTriggerStatement
             return;
         }
 
-        if(this._portId_ == child)
+        if(this._port_ == child)
         {
-            this._portId_ = null;
+            this._port_ = null;
             return;
         }
 
@@ -127,9 +127,9 @@ public final class ATriggerStatement extends PTriggerStatement
             return;
         }
 
-        if(this._portId_ == oldChild)
+        if(this._port_ == oldChild)
         {
-            setPortId((TIdentifier) newChild);
+            setPort((PExpression) newChild);
             return;
         }
 

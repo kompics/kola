@@ -27,8 +27,6 @@ import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JType;
-import java.util.LinkedList;
-import java.util.List;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AConstructorDeclarator;
@@ -45,6 +43,8 @@ import se.sics.kola.node.AVoidResult;
 import se.sics.kola.node.PArgument;
 import se.sics.kola.node.PTypeParameter;
 import se.sics.kola.sourcegen.AnnotationAdapter.Annotatable;
+import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameter;
+import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameterAdapter;
 import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
@@ -112,31 +112,17 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
 
     }
 
-    class MethodDeclaratorAdapter extends DepthFirstAdapter {
+    class MethodDeclaratorAdapter extends FormalParameterAdapter {
 
         String name;
-        List<FormalParameter> params = new LinkedList<>();
+
+        MethodDeclaratorAdapter() {
+            super(context);
+        }
 
         @Override
         public void inAMethodDeclarator(AMethodDeclarator node) {
             name = node.getIdentifier().getText();
-        }
-
-        @Override
-        public void caseAFormalParameter(AFormalParameter node) {
-            FormalParameter param = new FormalParameter();
-            param.var = (node.parent() instanceof AVariableLastFormalParameter);
-            FieldModifierAdapter fma = new FieldModifierAdapter();
-            node.apply(fma);
-            param.mods = fma.getMods();
-            TypeAdapter ta = new TypeAdapter(context);
-            node.getType().apply(ta);
-            param.type = ta.type;
-            AVariableDeclaratorId avdid = (AVariableDeclaratorId) node.getVariableDeclaratorId();
-            param.id = avdid.getIdentifier().getText();
-            param.dim = avdid.getDim().size();
-
-            params.add(param);
         }
     }
 
@@ -234,24 +220,5 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
         }
     }
 
-    static class FormalParameter {
-
-        int mods;
-        boolean var;
-        JType type;
-        String id;
-        int dim;
-
-        void apply(JMethod method) {
-            JType arrayType = type;
-            for (int i = 0; i < dim; i++) {
-                arrayType = arrayType.array();
-            }
-            if (var) {
-                method.varParam(arrayType, id);
-            } else {
-                method.param(mods, arrayType, id);
-            }
-        }
-    }
+    
 }

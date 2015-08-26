@@ -78,6 +78,7 @@ import se.sics.kola.node.PSwitchBlockStatementGroup;
 import se.sics.kola.node.PSwitchLabel;
 import se.sics.kola.sourcegen.ExpressionAdapter.ExpressionParent;
 import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
+import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameter;
 
 /**
  *
@@ -242,7 +243,7 @@ public class StatementAdapter extends DepthFirstAdapter {
     public void caseAEnhancedForStatement(AEnhancedForStatement node) {
         // Formal Parameter
         AFormalParameter paramNode = (AFormalParameter) node.getVariable();
-        BodyAdapter.FormalParameter param = new BodyAdapter.FormalParameter();
+        FormalParameter param = new FormalParameter();
         FieldModifierAdapter fma = new FieldModifierAdapter();
         paramNode.apply(fma);
         param.mods = fma.getMods();

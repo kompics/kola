@@ -12,6 +12,7 @@ public final class AEventDeclaration extends PEventDeclaration
     private TIdentifier _identifier_;
     private final LinkedList<PTypeParameter> _typeParameter_ = new LinkedList<PTypeParameter>();
     private PHeaderFields _headerFields_;
+    private PClassType _parent_;
     private final LinkedList<PInterfaceType> _interfaceType_ = new LinkedList<PInterfaceType>();
     private PClassBody _classBody_;
 
@@ -25,6 +26,7 @@ public final class AEventDeclaration extends PEventDeclaration
         @SuppressWarnings("hiding") TIdentifier _identifier_,
         @SuppressWarnings("hiding") List<?> _typeParameter_,
         @SuppressWarnings("hiding") PHeaderFields _headerFields_,
+        @SuppressWarnings("hiding") PClassType _parent_,
         @SuppressWarnings("hiding") List<?> _interfaceType_,
         @SuppressWarnings("hiding") PClassBody _classBody_)
     {
@@ -36,6 +38,8 @@ public final class AEventDeclaration extends PEventDeclaration
         setTypeParameter(_typeParameter_);
 
         setHeaderFields(_headerFields_);
+
+        setParent(_parent_);
 
         setInterfaceType(_interfaceType_);
 
@@ -51,6 +55,7 @@ public final class AEventDeclaration extends PEventDeclaration
             cloneNode(this._identifier_),
             cloneList(this._typeParameter_),
             cloneNode(this._headerFields_),
+            cloneNode(this._parent_),
             cloneList(this._interfaceType_),
             cloneNode(this._classBody_));
     }
@@ -163,6 +168,31 @@ public final class AEventDeclaration extends PEventDeclaration
         this._headerFields_ = node;
     }
 
+    public PClassType getParent()
+    {
+        return this._parent_;
+    }
+
+    public void setParent(PClassType node)
+    {
+        if(this._parent_ != null)
+        {
+            this._parent_.parent(null);
+        }
+
+        if(node != null)
+        {
+            if(node.parent() != null)
+            {
+                node.parent().removeChild(node);
+            }
+
+            node.parent(this);
+        }
+
+        this._parent_ = node;
+    }
+
     public LinkedList<PInterfaceType> getInterfaceType()
     {
         return this._interfaceType_;
@@ -222,6 +252,7 @@ public final class AEventDeclaration extends PEventDeclaration
             + toString(this._identifier_)
             + toString(this._typeParameter_)
             + toString(this._headerFields_)
+            + toString(this._parent_)
             + toString(this._interfaceType_)
             + toString(this._classBody_);
     }
@@ -249,6 +280,12 @@ public final class AEventDeclaration extends PEventDeclaration
         if(this._headerFields_ == child)
         {
             this._headerFields_ = null;
+            return;
+        }
+
+        if(this._parent_ == child)
+        {
+            this._parent_ = null;
             return;
         }
 
@@ -315,6 +352,12 @@ public final class AEventDeclaration extends PEventDeclaration
         if(this._headerFields_ == oldChild)
         {
             setHeaderFields((PHeaderFields) newChild);
+            return;
+        }
+
+        if(this._parent_ == oldChild)
+        {
+            setParent((PClassType) newChild);
             return;
         }
 

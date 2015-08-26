@@ -357,6 +357,102 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
+    public void caseASubscribeKolaKeyword(ASubscribeKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAConnectKolaKeyword(AConnectKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAInitKolaKeyword(AInitKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseARequestKolaKeyword(ARequestKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAIndicationKolaKeyword(AIndicationKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseARequiresKolaKeyword(ARequiresKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAProvidesKolaKeyword(AProvidesKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAComponentKolaKeyword(AComponentKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAComponentdefKolaKeyword(AComponentdefKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAPortKolaKeyword(APortKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAHandleKolaKeyword(AHandleKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAHandlerKolaKeyword(AHandlerKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
     public void caseAPortDeclaration(APortDeclaration node)
     {
         defaultCase(node);
@@ -1966,6 +2062,12 @@ public class AnalysisAdapter implements Analysis
 
     @Override
     public void caseATypeMethodInvocation(ATypeMethodInvocation node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
+    public void caseAKolaMethodInvocation(AKolaMethodInvocation node)
     {
         defaultCase(node);
     }

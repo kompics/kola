@@ -40,6 +40,7 @@ import se.sics.kola.node.AStaticInitializer;
 import se.sics.kola.node.PModifier;
 import se.sics.kola.node.PTypeParameter;
 import se.sics.kola.node.PVariableDeclarator;
+import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameter;
 
 /**
  *
