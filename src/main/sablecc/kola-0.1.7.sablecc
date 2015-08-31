@@ -1536,8 +1536,8 @@ Productions
     {primary} primary dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.primary(primary.expression_no_name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
     {super} super_keyword dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.super([non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
     {class} class_name [dot1]:dot super_keyword [dot2]:dot non_wild_type_arguments? identifier l_par argument_list? r_par {-> New method_invocation.class(class_name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
-    {type} name dot non_wild_type_arguments identifier l_par argument_list? r_par {-> New method_invocation.type(name.name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])}; //|
-    //{kola} kola_keyword l_par argument_list? r_par {-> New method_invocation.kola(kola_keyword, [argument_list.argument])};
+    {type} name dot non_wild_type_arguments identifier l_par argument_list? r_par {-> New method_invocation.type(name.name, [non_wild_type_arguments.reference_type], identifier, [argument_list.argument])} |
+    {kola} kola_keyword l_par argument_list? r_par {-> New method_invocation.kola(kola_keyword, [argument_list.argument])};
 
   // 15.13
 
@@ -1897,19 +1897,9 @@ Productions
     {subscribe} subscribe_keyword | 
     {unsubscribe} unsubscribe_keyword | 
     {connect} connect_keyword | 
-    {disconnect} disconnect_keyword | 
-    {trigger} trigger_keyword | 
-    {init} init_keyword | 
-    {request} request_keyword | 
-    {indication} indication_keyword | 
+    {disconnect} disconnect_keyword |
     {requires} requires_keyword |
-    {provides} provides_keyword | 
-    {component} component_keyword | 
-    {componentdef} componentdef_keyword | 
-    {port} port_keyword | 
-    {handle} handle_keyword | 
-    {handler} handler_keyword | 
-    {event} event_keyword;
+    {provides} provides_keyword;
 
   port_declaration {-> port_declaration} = 
     modifiers? port_keyword identifier port_body {-> New port_declaration([modifiers.modifier], identifier, port_body.port_body)};
@@ -2116,19 +2106,9 @@ kola_keyword =
     {subscribe} subscribe_keyword | 
     {unsubscribe} unsubscribe_keyword | 
     {connect} connect_keyword | 
-    {disconnect} disconnect_keyword | 
-    {trigger} trigger_keyword | 
-    {init} init_keyword | 
-    {request} request_keyword | 
-    {indication} indication_keyword | 
+    {disconnect} disconnect_keyword |
     {requires} requires_keyword |
-    {provides} provides_keyword | 
-    {component} component_keyword | 
-    {componentdef} componentdef_keyword | 
-    {port} port_keyword | 
-    {handle} handle_keyword | 
-    {handler} handler_keyword | 
-    {event} event_keyword;
+    {provides} provides_keyword;
 
 port_declaration = 
     modifier* identifier port_body;
