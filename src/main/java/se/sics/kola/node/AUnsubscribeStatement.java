@@ -7,8 +7,8 @@ import se.sics.kola.analysis.*;
 @SuppressWarnings("nls")
 public final class AUnsubscribeStatement extends PUnsubscribeStatement
 {
-    private TIdentifier _handlerId_;
-    private TIdentifier _portId_;
+    private PName _handlerId_;
+    private PName _portId_;
 
     public AUnsubscribeStatement()
     {
@@ -16,8 +16,8 @@ public final class AUnsubscribeStatement extends PUnsubscribeStatement
     }
 
     public AUnsubscribeStatement(
-        @SuppressWarnings("hiding") TIdentifier _handlerId_,
-        @SuppressWarnings("hiding") TIdentifier _portId_)
+        @SuppressWarnings("hiding") PName _handlerId_,
+        @SuppressWarnings("hiding") PName _portId_)
     {
         // Constructor
         setHandlerId(_handlerId_);
@@ -40,12 +40,12 @@ public final class AUnsubscribeStatement extends PUnsubscribeStatement
         ((Analysis) sw).caseAUnsubscribeStatement(this);
     }
 
-    public TIdentifier getHandlerId()
+    public PName getHandlerId()
     {
         return this._handlerId_;
     }
 
-    public void setHandlerId(TIdentifier node)
+    public void setHandlerId(PName node)
     {
         if(this._handlerId_ != null)
         {
@@ -65,12 +65,12 @@ public final class AUnsubscribeStatement extends PUnsubscribeStatement
         this._handlerId_ = node;
     }
 
-    public TIdentifier getPortId()
+    public PName getPortId()
     {
         return this._portId_;
     }
 
-    public void setPortId(TIdentifier node)
+    public void setPortId(PName node)
     {
         if(this._portId_ != null)
         {
@@ -123,13 +123,13 @@ public final class AUnsubscribeStatement extends PUnsubscribeStatement
         // Replace child
         if(this._handlerId_ == oldChild)
         {
-            setHandlerId((TIdentifier) newChild);
+            setHandlerId((PName) newChild);
             return;
         }
 
         if(this._portId_ == oldChild)
         {
-            setPortId((TIdentifier) newChild);
+            setPortId((PName) newChild);
             return;
         }
 

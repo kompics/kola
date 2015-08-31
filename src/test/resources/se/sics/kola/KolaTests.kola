@@ -38,7 +38,7 @@ componentdef KolaTestC {
 	requires TestPort test;
 
     handle startHandler -> control : Start e {
-    	//trigger(new Start(), control);
+    	trigger(Start.event, control);
     	TestUtil.submit("STARTED");
     }
 

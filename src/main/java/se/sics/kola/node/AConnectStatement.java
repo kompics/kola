@@ -7,8 +7,8 @@ import se.sics.kola.analysis.*;
 @SuppressWarnings("nls")
 public final class AConnectStatement extends PConnectStatement
 {
-    private TIdentifier _providedId_;
-    private TIdentifier _requiredId_;
+    private PName _providedId_;
+    private PName _requiredId_;
     private PClassType _classType_;
 
     public AConnectStatement()
@@ -17,8 +17,8 @@ public final class AConnectStatement extends PConnectStatement
     }
 
     public AConnectStatement(
-        @SuppressWarnings("hiding") TIdentifier _providedId_,
-        @SuppressWarnings("hiding") TIdentifier _requiredId_,
+        @SuppressWarnings("hiding") PName _providedId_,
+        @SuppressWarnings("hiding") PName _requiredId_,
         @SuppressWarnings("hiding") PClassType _classType_)
     {
         // Constructor
@@ -45,12 +45,12 @@ public final class AConnectStatement extends PConnectStatement
         ((Analysis) sw).caseAConnectStatement(this);
     }
 
-    public TIdentifier getProvidedId()
+    public PName getProvidedId()
     {
         return this._providedId_;
     }
 
-    public void setProvidedId(TIdentifier node)
+    public void setProvidedId(PName node)
     {
         if(this._providedId_ != null)
         {
@@ -70,12 +70,12 @@ public final class AConnectStatement extends PConnectStatement
         this._providedId_ = node;
     }
 
-    public TIdentifier getRequiredId()
+    public PName getRequiredId()
     {
         return this._requiredId_;
     }
 
-    public void setRequiredId(TIdentifier node)
+    public void setRequiredId(PName node)
     {
         if(this._requiredId_ != null)
         {
@@ -160,13 +160,13 @@ public final class AConnectStatement extends PConnectStatement
         // Replace child
         if(this._providedId_ == oldChild)
         {
-            setProvidedId((TIdentifier) newChild);
+            setProvidedId((PName) newChild);
             return;
         }
 
         if(this._requiredId_ == oldChild)
         {
-            setRequiredId((TIdentifier) newChild);
+            setRequiredId((PName) newChild);
             return;
         }
 
