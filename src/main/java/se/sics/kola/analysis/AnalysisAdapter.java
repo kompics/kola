@@ -399,6 +399,12 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
+    public void caseAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
     public void caseAPortDeclaration(APortDeclaration node)
     {
         defaultCase(node);
@@ -1977,7 +1983,7 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseAEventExpressionNoName(AEventExpressionNoName node)
+    public void caseAKolaExpressionNoName(AKolaExpressionNoName node)
     {
         defaultCase(node);
     }

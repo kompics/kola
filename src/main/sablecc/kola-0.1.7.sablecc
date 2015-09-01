@@ -1467,8 +1467,8 @@ Productions
     {instance} class_instance_creation_expression {-> New expression_no_name.instance(class_instance_creation_expression.class_instance_creation_expression)} |
     {field} field_access {-> New expression_no_name.field(field_access)} |
     {method} method_invocation {-> New expression_no_name.method(method_invocation)} |
-    {array} array_access {-> New expression_no_name.array(array_access)} |
-    {event} name dot event_keyword {-> New expression_no_name.event(name)};
+    {array} array_access {-> New expression_no_name.array(array_access)}|
+    {kola} name dot kola_keyword {-> New expression_no_name.kola(name.name, kola_keyword)};
 
   // Missing from JLS
 
@@ -1901,7 +1901,8 @@ Productions
     {disconnect} disconnect_keyword |
     {requires} requires_keyword |
     {provides} provides_keyword |
-    {trigger} trigger_keyword;
+    {trigger} trigger_keyword |
+    {event} event_keyword;
 
   port_declaration {-> port_declaration} = 
     modifiers? port_keyword identifier port_body {-> New port_declaration([modifiers.modifier], identifier, port_body.port_body)};
@@ -2111,7 +2112,8 @@ kola_keyword =
     {disconnect} disconnect_keyword |
     {requires} requires_keyword |
     {provides} provides_keyword |
-    {trigger} trigger_keyword;
+    {trigger} trigger_keyword |
+    {event} event_keyword;
 
 port_declaration = 
     modifier* identifier port_body;
@@ -2550,7 +2552,7 @@ expression_no_name =
     {array_creation} array_creation_expression |
     {instance} class_instance_creation_expression |
     {expression} expression |
-    {event} name;
+    {kola} name kola_keyword;
 
 
 constant_expression_no_name = expression_no_name;

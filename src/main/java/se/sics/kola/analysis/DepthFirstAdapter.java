@@ -1302,6 +1302,27 @@ public class DepthFirstAdapter extends AnalysisAdapter
         outATriggerKolaKeyword(node);
     }
 
+    public void inAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAEventKolaKeyword(AEventKolaKeyword node)
+    {
+        inAEventKolaKeyword(node);
+        if(node.getEventKeyword() != null)
+        {
+            node.getEventKeyword().apply(this);
+        }
+        outAEventKolaKeyword(node);
+    }
+
     public void inAPortDeclaration(APortDeclaration node)
     {
         defaultIn(node);
@@ -7587,25 +7608,29 @@ public class DepthFirstAdapter extends AnalysisAdapter
         outAExpressionExpressionNoName(node);
     }
 
-    public void inAEventExpressionNoName(AEventExpressionNoName node)
+    public void inAKolaExpressionNoName(AKolaExpressionNoName node)
     {
         defaultIn(node);
     }
 
-    public void outAEventExpressionNoName(AEventExpressionNoName node)
+    public void outAKolaExpressionNoName(AKolaExpressionNoName node)
     {
         defaultOut(node);
     }
 
     @Override
-    public void caseAEventExpressionNoName(AEventExpressionNoName node)
+    public void caseAKolaExpressionNoName(AKolaExpressionNoName node)
     {
-        inAEventExpressionNoName(node);
+        inAKolaExpressionNoName(node);
         if(node.getName() != null)
         {
             node.getName().apply(this);
         }
-        outAEventExpressionNoName(node);
+        if(node.getKolaKeyword() != null)
+        {
+            node.getKolaKeyword().apply(this);
+        }
+        outAKolaExpressionNoName(node);
     }
 
     public void inAConstantExpressionNoName(AConstantExpressionNoName node)

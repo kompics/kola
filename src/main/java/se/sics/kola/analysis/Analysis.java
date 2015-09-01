@@ -66,6 +66,7 @@ public interface Analysis extends Switch
     void caseARequiresKolaKeyword(ARequiresKolaKeyword node);
     void caseAProvidesKolaKeyword(AProvidesKolaKeyword node);
     void caseATriggerKolaKeyword(ATriggerKolaKeyword node);
+    void caseAEventKolaKeyword(AEventKolaKeyword node);
     void caseAPortDeclaration(APortDeclaration node);
     void caseAEventDeclaration(AEventDeclaration node);
     void caseAHeaderFields(AHeaderFields node);
@@ -329,7 +330,7 @@ public interface Analysis extends Switch
     void caseAArrayCreationExpressionNoName(AArrayCreationExpressionNoName node);
     void caseAInstanceExpressionNoName(AInstanceExpressionNoName node);
     void caseAExpressionExpressionNoName(AExpressionExpressionNoName node);
-    void caseAEventExpressionNoName(AEventExpressionNoName node);
+    void caseAKolaExpressionNoName(AKolaExpressionNoName node);
     void caseAConstantExpressionNoName(AConstantExpressionNoName node);
     void caseAMethodMethodInvocation(AMethodMethodInvocation node);
     void caseAPrimaryMethodInvocation(APrimaryMethodInvocation node);
