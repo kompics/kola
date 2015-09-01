@@ -351,6 +351,7 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             }
             int mods = modap.getMods();
             JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
+            c.mods().setPublic(); // ports should be public so Kompics can load them
             context.declaredClasses.put(node.getIdentifier().getText(), c);
             c._extends(PortType.class);
             PortBodyAdapter pba = new PortBodyAdapter(c.instanceInit(), context);

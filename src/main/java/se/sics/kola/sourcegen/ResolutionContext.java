@@ -27,6 +27,7 @@ import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JFieldRef;
+import com.sun.codemodel.JFieldVar;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JLabel;
 import java.util.HashMap;
@@ -49,32 +50,42 @@ class ResolutionContext {
     JCodeModel unit;
     Map<String, JClass> imports = new HashMap<>();
     Map<String, JDefinedClass> declaredClasses = new HashMap<>();
-    private final LinkedList<Set<String>> generics = new LinkedList<>();
-    private final LinkedList<Map<String, JLabel>> labels = new LinkedList<>();
+    private final LinkedList<ResolutionLevel> levels = new LinkedList<>();
 
     void pushLevel() {
-        generics.push(new HashSet<String>());
-        labels.push(new HashMap<String, JLabel>());
+        levels.push(new ResolutionLevel());
     }
 
     void popLevel() {
-        generics.pop();
-        labels.pop();
+        levels.pop();
     }
 
     void addGeneric(String g) {
-        Set<String> s = generics.peek();
-        s.add(g);
+        levels.peek().generics.add(g);
     }
 
     void addLabel(String name, JLabel label) {
-        Map<String, JLabel> s = labels.peek();
-        s.put(name, label);
+        levels.peek().labels.put(name, label);
+    }
+    
+    void addField(String name, JFieldVar var, FieldType type) {
+        FieldObject fo = new FieldObject(type, var);
+        levels.peek().fields.put(name, fo);
+    }
+    
+    Optional<FieldObject> findField(String name) {
+        for (ResolutionLevel level : levels) {
+            FieldObject fo = level.fields.get(name);
+            if (fo != null) {
+                return Optional.of(fo);
+            }
+        }
+        return Optional.absent();
     }
     
     Optional<JLabel> findLabel(String name) {
-        for (Map<String, JLabel> labelMap : labels) {
-            JLabel label = labelMap.get(name);
+        for (ResolutionLevel level : levels) {
+            JLabel label = level.labels.get(name);
             if (label != null) {
                 return Optional.of(label);
             }
@@ -83,8 +94,8 @@ class ResolutionContext {
     }
 
     JClass resolveType(String name) throws ClassNotFoundException {
-        for (Set<String> genericSet : generics) {
-            if (genericSet.contains(name)) {
+        for (ResolutionLevel level : levels) {
+            if (level.generics.contains(name)) {
                 return unit.directClass(name);
             }
         }
@@ -97,6 +108,14 @@ class ResolutionContext {
             // empty package
             try {
                 Class c = ClassLoader.getSystemClassLoader().loadClass(name);
+                return unit.ref(c);
+            } catch (ClassNotFoundException ex) {
+                // ignore
+            }
+            // kompics
+            String kompicsName = "se.sics.kompics." + name;
+            try {
+                Class c = ClassLoader.getSystemClassLoader().loadClass(kompicsName);
                 return unit.ref(c);
             } catch (ClassNotFoundException ex) {
                 // ignore
@@ -139,6 +158,13 @@ class ResolutionContext {
 
     JFieldRef resolveField(AName aName) {
         LinkedList<TIdentifier> ids = aName.getIdentifier();
+        if (ids.size() == 1) {
+            String id = ids.getFirst().getText();
+            Optional<FieldObject> fo = findField(id);
+            if (fo.isPresent()) {
+                return JExpr.ref(id);
+            }
+        }
         Either<JClass, JFieldRef> e = resolve(ids);
         if (e.isRight()) {
             return e.getRight();
@@ -210,5 +236,29 @@ class ResolutionContext {
         ids.addFirst(firstId);
         return ret;
 //        }
+    }
+    
+    private static class ResolutionLevel {
+        Set<String> generics = new HashSet<>();
+        Map<String, JLabel> labels = new HashMap<>();
+        Map<String, FieldObject> fields = new HashMap<>();
+    }
+    
+    public static class FieldObject {
+        public final FieldType type;
+        public final JFieldVar var;
+        
+        public FieldObject(FieldType type, JFieldVar var) {
+            this.type = type;
+            this.var = var;
+        }
+    }
+    
+    public static enum FieldType {
+        POSITIVE_PORT,
+        NEGATIVE_PORT,
+        COMPONENT,
+        HANDLER,
+        NORMAL;
     }
 }

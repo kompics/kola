@@ -54,6 +54,7 @@ import se.sics.kola.node.AGtExpressionNoName;
 import se.sics.kola.node.AGteqExpressionNoName;
 import se.sics.kola.node.AInstanceofExpressionNoName;
 import se.sics.kola.node.AIorExpressionNoName;
+import se.sics.kola.node.AKolaMethodInvocation;
 import se.sics.kola.node.ALiteralExpressionNoName;
 import se.sics.kola.node.ALtExpressionNoName;
 import se.sics.kola.node.ALteqExpressionNoName;
@@ -185,6 +186,17 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         } catch (ClassNotFoundException ex) {
             AName aname = (AName) acname.getName();
             Logger.error(aname.getIdentifier().peekFirst(), "Could not find type: " + name);
+        }
+    }
+    
+    @Override
+    public void caseAKolaMethodInvocation(AKolaMethodInvocation node) {
+        JInvocation inv = parent.invoke(Util.kolaKWToString(node.getKolaKeyword()));
+        Argumentable ia = new InvocationArgumentable(inv);
+        expr = inv;
+        for (PArgument arg : node.getArgument()) {
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
+            arg.apply(aa);
         }
     }
 

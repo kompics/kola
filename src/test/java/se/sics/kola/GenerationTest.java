@@ -111,6 +111,8 @@ public class GenerationTest {
             Class testClass = cl.loadClass("se.sics.kola.KolaTestC");
             Kompics.createAndStart(testClass, 1);
             TestUtil.waitFor("STARTED");
+            TestUtil.waitFor("RECEIVED");
+            TestUtil.waitFor("REPLIED");
             Kompics.shutdown();
             
             

@@ -20,15 +20,22 @@
  */
 package se.sics.kola.sourcegen;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import se.sics.kola.Logger;
 import se.sics.kola.node.AArgsWithName;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.ATypeDeclSpecifier;
+import se.sics.kola.node.Node;
 import se.sics.kola.node.PArgsWithName;
+import se.sics.kola.node.PKolaKeyword;
 import se.sics.kola.node.PName;
 import se.sics.kola.node.PTypeArguments;
 import se.sics.kola.node.TIdentifier;
+import se.sics.kola.node.Token;
 
 /**
  *
@@ -52,6 +59,16 @@ public class Util {
             }
         }
         return sb.toString();
+    }
+    
+    public static String kolaKWToString(PKolaKeyword kw) {
+        List<Token> tokens = findTokenChildren(kw);
+        if (!tokens.isEmpty()) {
+            return tokens.get(0).getText();
+        } else {
+            Logger.error("Expected a token as part of a PKolaKeyword, but found none.");
+            return "";
+        }
     }
 
     static LinkedList<IdWithOptArgs> shiftTDS(ATypeDeclSpecifier spec, ResolutionContext context) {
@@ -85,4 +102,23 @@ public class Util {
         PTypeArguments args;
     }
 
+    
+    public static List<Token> findTokenChildren(Node node) {
+        List<Token> list = new LinkedList<>();
+        Class c = node.getClass();
+        Method[] methods = c.getMethods();
+        for (Method m : methods) {
+            Class t = m.getReturnType();
+            if (Token.class.isAssignableFrom(t)) {
+                try {
+                    list.add((Token) m.invoke(node));
+                } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                    ex.printStackTrace(System.err);
+                    Logger.error("Couldn't get token at node!");
+                }
+            }
+        }
+        return list;
+    }
+    
 }

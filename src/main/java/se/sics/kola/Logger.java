@@ -20,6 +20,8 @@
  */
 package se.sics.kola;
 
+import se.sics.kola.node.AName;
+import se.sics.kola.node.PName;
 import se.sics.kola.node.Token;
 
 /**
@@ -28,6 +30,16 @@ import se.sics.kola.node.Token;
  */
 public class Logger {
 
+    public static void error(PName name, String msg) {
+        AName aname = (AName) name;
+        if (aname.getIdentifier().isEmpty()) {
+            error(msg);
+        } else {
+            error(aname.getIdentifier().peekFirst(), msg);
+        }
+                
+    }
+    
     public static void error(Token t, String msg) {
         if (t != null) {
             System.err.println("ERROR at (l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
@@ -37,6 +49,6 @@ public class Logger {
     }
     
     public static void error(String msg) {
-        error(null, msg);
+        error((Token)null, msg);
     }
 }

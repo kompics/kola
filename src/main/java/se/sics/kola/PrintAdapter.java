@@ -20,15 +20,12 @@
  */
 package se.sics.kola;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.LinkedList;
-import java.util.List;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AName;
 import se.sics.kola.node.Node;
 import se.sics.kola.node.TIdentifier;
 import se.sics.kola.node.Token;
+import se.sics.kola.sourcegen.Util;
 import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
@@ -47,7 +44,7 @@ public class PrintAdapter extends DepthFirstAdapter {
         sb.append('(');
         sb.append('\n');
         depth++;
-        for (Token t : findTokenChildren(node)) {
+        for (Token t : Util.findTokenChildren(node)) {
             space();
             if (t != null) {
                 sb.append(t.getText());
@@ -99,21 +96,5 @@ public class PrintAdapter extends DepthFirstAdapter {
         }
     }
 
-    private List<Token> findTokenChildren(Node node) {
-        List<Token> list = new LinkedList<>();
-        Class c = node.getClass();
-        Method[] methods = c.getMethods();
-        for (Method m : methods) {
-            Class t = m.getReturnType();
-            if (Token.class.isAssignableFrom(t)) {
-                try {
-                    list.add((Token) m.invoke(node));
-                } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                    ex.printStackTrace(System.err);
-                    Logger.error("Couldn't get token at node!");
-                }
-            }
-        }
-        return list;
-    }
+    
 }

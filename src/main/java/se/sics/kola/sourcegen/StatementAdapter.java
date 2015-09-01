@@ -28,6 +28,7 @@ import com.sun.codemodel.JDoLoop;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JForEach;
 import com.sun.codemodel.JForLoop;
+import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JLabel;
 import com.sun.codemodel.JStatement;
 import com.sun.codemodel.JSwitch;
@@ -60,6 +61,7 @@ import se.sics.kola.node.ASwitchBlockStatementGroup;
 import se.sics.kola.node.ASwitchStatement;
 import se.sics.kola.node.ASynchronizedStatement;
 import se.sics.kola.node.AThrowStatement;
+import se.sics.kola.node.ATriggerStatement;
 import se.sics.kola.node.ATryWithResourcesStatement;
 import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.node.AVoidReturnStatement;
@@ -385,6 +387,19 @@ public class StatementAdapter extends DepthFirstAdapter {
     public void caseAResourcesTryStatement(AResourcesTryStatement node) {
         ATryWithResourcesStatement twrs = (ATryWithResourcesStatement) node.getTryWithResourcesStatement();
         tryCatchFinallyStatement(twrs.getResourceSpecification(), twrs.getBlock(), twrs.getCatchClause(), twrs.getFinally());
+    }
+    
+    // KOLA
+    
+    @Override
+    public void caseATriggerStatement(ATriggerStatement node) {
+        ExpressionAdapter eaEvent = new ExpressionAdapter(new JExprParent(), context);
+        node.getEvent().apply(eaEvent);
+        ExpressionAdapter eaPort = new ExpressionAdapter(new JExprParent(), context);
+        node.getPort().apply(eaPort);
+        JInvocation inv = parent.invoke("trigger");
+        inv.arg(eaEvent.expr);
+        inv.arg(eaPort.expr);
     }
 
     public static interface StatementParent extends ExpressionParent {

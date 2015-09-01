@@ -20,16 +20,24 @@
  */
 package se.sics.kola;
 
-import se.sics.kompics.Start;
-
 event TestEvent1(String some)
+event TestEvent2(String some)
 
 port TestPort {
 	indication {
-		TestEvent1
+		TestEvent2
 	}
 	request {
 		TestEvent1
+	}
+}
+
+componentdef KolaTestChild {
+	provides TestPort test;
+
+	handle testHandler -> test : TestEvent1 e {
+		TestUtil.submit(e.some);
+		trigger {new TestEvent2("REPLIED")} -> test;
 	}
 }
 
@@ -37,14 +45,19 @@ componentdef KolaTestC {
 
 	requires TestPort test;
 
+	component KolaTestChild() child;
+
+	connect child -> test : TestPort;
+
     handle startHandler -> control : Start e {
-    	trigger(Start.event, control);
     	TestUtil.submit("STARTED");
+    	trigger {new TestEvent1("RECEIVED")} -> test;
     }
 
-    handler testHandler : TestEvent1 e {
-    	TestUtil.submit("TESTED");
+    handler testHandler : TestEvent2 e {
+    	TestUtil.submit(e.some);
     }
 
     subscribe testHandler -> test;
 }
+
