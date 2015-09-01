@@ -1467,7 +1467,8 @@ Productions
     {instance} class_instance_creation_expression {-> New expression_no_name.instance(class_instance_creation_expression.class_instance_creation_expression)} |
     {field} field_access {-> New expression_no_name.field(field_access)} |
     {method} method_invocation {-> New expression_no_name.method(method_invocation)} |
-    {array} array_access {-> New expression_no_name.array(array_access)};
+    {array} array_access {-> New expression_no_name.array(array_access)} |
+    {event} name dot event_keyword {-> New expression_no_name.event(name)};
 
   // Missing from JLS
 
@@ -2548,7 +2549,8 @@ expression_no_name =
     {array} array_access |
     {array_creation} array_creation_expression |
     {instance} class_instance_creation_expression |
-    {expression} expression;
+    {expression} expression |
+    {event} name;
 
 
 constant_expression_no_name = expression_no_name;

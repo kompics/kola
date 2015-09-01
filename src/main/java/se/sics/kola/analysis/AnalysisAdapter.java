@@ -1977,6 +1977,12 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
+    public void caseAEventExpressionNoName(AEventExpressionNoName node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
     public void caseAConstantExpressionNoName(AConstantExpressionNoName node)
     {
         defaultCase(node);

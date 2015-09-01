@@ -329,6 +329,7 @@ public interface Analysis extends Switch
     void caseAArrayCreationExpressionNoName(AArrayCreationExpressionNoName node);
     void caseAInstanceExpressionNoName(AInstanceExpressionNoName node);
     void caseAExpressionExpressionNoName(AExpressionExpressionNoName node);
+    void caseAEventExpressionNoName(AEventExpressionNoName node);
     void caseAConstantExpressionNoName(AConstantExpressionNoName node);
     void caseAMethodMethodInvocation(AMethodMethodInvocation node);
     void caseAPrimaryMethodInvocation(APrimaryMethodInvocation node);

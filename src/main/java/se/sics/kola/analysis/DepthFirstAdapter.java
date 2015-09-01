@@ -7587,6 +7587,27 @@ public class DepthFirstAdapter extends AnalysisAdapter
         outAExpressionExpressionNoName(node);
     }
 
+    public void inAEventExpressionNoName(AEventExpressionNoName node)
+    {
+        defaultIn(node);
+    }
+
+    public void outAEventExpressionNoName(AEventExpressionNoName node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseAEventExpressionNoName(AEventExpressionNoName node)
+    {
+        inAEventExpressionNoName(node);
+        if(node.getName() != null)
+        {
+            node.getName().apply(this);
+        }
+        outAEventExpressionNoName(node);
+    }
+
     public void inAConstantExpressionNoName(AConstantExpressionNoName node)
     {
         defaultIn(node);
