@@ -2008,10 +2008,10 @@ Productions
     unsubscribe_keyword [handler_id]:name r_arrow [port_id]:name semi {-> New unsubscribe_statement(handler_id, port_id)};
 
   trigger_statement {-> trigger_statement} =
-    {name_name} trigger_keyword [event]:name r_arrow [port]:name semi {-> New trigger_statement(New expression.name(event.name), New expression.name(port.name))};
-    //{expression_name} trigger_keyword [event]:method_invocation r_arrow [port]:name semi {-> New trigger_statement(New expression.expression(New expression_no_name.method(event)), New expression.name(port.name))} |
-    //{name_expression} trigger_keyword [event]:name r_arrow [port]:method_invocation semi {-> New trigger_statement(New expression.name(event.name), New expression.expression(New expression_no_name.method(port)))} |
-    //{expression_expression} trigger_keyword [event]:method_invocation r_arrow [port]:method_invocation semi {-> New trigger_statement(New expression.expression(New expression_no_name.method(event)), New expression.expression(New expression_no_name.method(port)))};
+    {name_name} trigger_keyword [event]:name r_arrow [port]:name semi {-> New trigger_statement(New expression.name(event.name), New expression.name(port.name))} |
+    {expression_name} trigger_keyword l_brc [event]:primary_no_new_array r_brc r_arrow [port]:name semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.name(port.name))} |
+    {name_expression} trigger_keyword [event]:name r_arrow [port]:primary_no_new_array semi {-> New trigger_statement(New expression.name(event.name), New expression.expression(port.expression_no_name))} |
+    {expression_expression} trigger_keyword l_brc [event]:primary_no_new_array r_brc r_arrow [port]:primary_no_new_array semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.expression(port.expression_no_name))};
     //{method_name_name} trigger_keyword l_par [event]:name comma [port]:name r_par semi {-> New trigger_statement(New expression.name(event.name), New expression.name(port.name))} |
     //{method_expression_name} trigger_keyword l_par [event]:expression_no_name comma [port]:name r_par semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.name(port.name))} |
     //{method_name_expression} trigger_keyword l_par [event]:name comma [port]:expression_no_name r_par semi {-> New trigger_statement(New expression.name(event.name), New expression.expression(port.expression_no_name))} |
