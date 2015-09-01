@@ -1297,6 +1297,27 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outAProvidesKolaKeyword(node);
     }
 
+    public void inATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultIn(node);
+    }
+
+    public void outATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultOut(node);
+    }
+
+    @Override
+    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        inATriggerKolaKeyword(node);
+        if(node.getTriggerKeyword() != null)
+        {
+            node.getTriggerKeyword().apply(this);
+        }
+        outATriggerKolaKeyword(node);
+    }
+
     public void inAPortDeclaration(APortDeclaration node)
     {
         defaultIn(node);

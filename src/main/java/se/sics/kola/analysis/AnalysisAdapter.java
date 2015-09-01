@@ -393,6 +393,12 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
+    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
+    {
+        defaultCase(node);
+    }
+
+    @Override
     public void caseAPortDeclaration(APortDeclaration node)
     {
         defaultCase(node);

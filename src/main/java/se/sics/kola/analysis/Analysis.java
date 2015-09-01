@@ -65,6 +65,7 @@ public interface Analysis extends Switch
     void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node);
     void caseARequiresKolaKeyword(ARequiresKolaKeyword node);
     void caseAProvidesKolaKeyword(AProvidesKolaKeyword node);
+    void caseATriggerKolaKeyword(ATriggerKolaKeyword node);
     void caseAPortDeclaration(APortDeclaration node);
     void caseAEventDeclaration(AEventDeclaration node);
     void caseAHeaderFields(AHeaderFields node);
