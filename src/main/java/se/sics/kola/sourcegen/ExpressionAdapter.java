@@ -54,6 +54,7 @@ import se.sics.kola.node.AGtExpressionNoName;
 import se.sics.kola.node.AGteqExpressionNoName;
 import se.sics.kola.node.AInstanceofExpressionNoName;
 import se.sics.kola.node.AIorExpressionNoName;
+import se.sics.kola.node.AKolaExpressionNoName;
 import se.sics.kola.node.AKolaMethodInvocation;
 import se.sics.kola.node.ALiteralExpressionNoName;
 import se.sics.kola.node.ALtExpressionNoName;
@@ -640,6 +641,11 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     public void caseANameExpression(ANameExpression node) {
         //expr = context.resolveField((AName) node.getName());
         expr = JExpr.direct(nameToString(node.getName()));
+    }
+    
+    @Override
+    public void caseAKolaExpressionNoName(AKolaExpressionNoName node) {
+        expr = JExpr.direct(nameToString(node.getName()) + "." + Util.kolaKWToString(node.getKolaKeyword()));
     }
 
     ////////////////////////// Literal ///////////////////////////

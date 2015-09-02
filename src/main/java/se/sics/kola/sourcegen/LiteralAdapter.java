@@ -25,8 +25,10 @@ import com.sun.codemodel.JExpression;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ABooleanLiteral;
+import se.sics.kola.node.ACharacterLiteral;
 import se.sics.kola.node.AFloatingPointLiteral;
 import se.sics.kola.node.AIntegerLiteral;
+import se.sics.kola.node.ANullLiteral;
 import se.sics.kola.node.AStringLiteral;
 
 /**
@@ -42,6 +44,46 @@ public class LiteralAdapter extends DepthFirstAdapter {
         String lit = node.getStringLiteral().getText();
         lit = lit.substring(1, lit.length() - 1); // strip quotes
         expr = JExpr.lit(lit);
+    }
+
+    @Override
+    public void caseACharacterLiteral(ACharacterLiteral node) {
+        String lit = node.getCharacterLiteral().getText();
+        lit = lit.substring(1, lit.length() - 1); // strip quotes
+        if (lit.startsWith("\\")) {
+            switch (lit) {
+                case "\\b":
+                    expr = JExpr.lit('\b');
+                    break;
+                case "\\t":
+                    expr = JExpr.lit('\t');
+                    break;
+                case "\\n":
+                    expr = JExpr.lit('\n');
+                    break;
+                case "\\f":
+                    expr = JExpr.lit('\f');
+                    break;
+                case "\\r":
+                    expr = JExpr.lit('\r');
+                    break;
+                case "\\\"":
+                    expr = JExpr.lit('\"');
+                    break;
+                case "\\\'":
+                    expr = JExpr.lit('\'');
+                    break;
+                case "\\\\":
+                    expr = JExpr.lit('\\');
+                    break;
+                default: // octal
+                    String numS = lit.substring(1, lit.length());
+                    int num = Integer.parseInt(numS, 8);
+                    expr = JExpr.lit((char)num);
+            }
+        } else {
+            expr = JExpr.lit(lit.charAt(0));
+        }
     }
 
     @Override
@@ -87,7 +129,7 @@ public class LiteralAdapter extends DepthFirstAdapter {
     @Override
     public void caseAFloatingPointLiteral(AFloatingPointLiteral node) {
         String literal = node.getFloatingPointLiteral().getText().replace("_", "");
-        char suffix = literal.charAt(literal.length()-1);
+        char suffix = literal.charAt(literal.length() - 1);
         switch (suffix) {
             case 'F':
             case 'f':
@@ -103,5 +145,10 @@ public class LiteralAdapter extends DepthFirstAdapter {
                 expr = JExpr.lit(d);
                 break;
         }
+    }
+
+    @Override
+    public void caseANullLiteral(ANullLiteral node) {
+        expr = JExpr._null();
     }
 }

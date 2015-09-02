@@ -312,22 +312,27 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
                 c._implements(ta.type.boxify());
             }
 
-            FormalParameterAdapter fpa = new FormalParameterAdapter(context);
-            node.getHeaderFields().apply(fpa);
-            if (!fpa.params.isEmpty()) {
-                JMethod constr = c.constructor(JMod.PUBLIC);
-                JBlock constrBody = constr.body();
-                for (FormalParameter fp : fpa.params) {
-                    int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
-                    JFieldVar v = c.field(fmods, fp.typeWithDim(), fp.id);
-                    if (v.mods().is(JMod.FINAL)) { // variables can only be either final or not
-                        fp.mods = JMod.FINAL;
-                    } else {
-                        fp.mods = 0;
+            if (node.getHeaderFields() != null) { // generate constructors
+                FormalParameterAdapter fpa = new FormalParameterAdapter(context);
+                node.getHeaderFields().apply(fpa);
+                if (!fpa.params.isEmpty()) {
+                    JMethod constr = c.constructor(JMod.PUBLIC);
+                    JBlock constrBody = constr.body();
+                    for (FormalParameter fp : fpa.params) {
+                        int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
+                        JFieldVar v = c.field(fmods, fp.typeWithDim(), fp.id);
+                        if (v.mods().is(JMod.FINAL)) { // variables can only be either final or not
+                            fp.mods = JMod.FINAL;
+                        } else {
+                            fp.mods = 0;
+                        }
+                        fp.apply(constr);
+                        constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
                     }
-                    fp.apply(constr);
-                    constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
                 }
+            } else { // assume singleton event
+                c.field(JMod.STATIC | JMod.FINAL | JMod.PUBLIC, c, "event", JExpr._new(c));
+                c.constructor(JMod.PRIVATE).body();
             }
 
             System.out.println("Creating event: " + c.fullName());

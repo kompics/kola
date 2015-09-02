@@ -119,6 +119,7 @@ class GenericTest<X extends TestClose> {
 public class BasicTests extends BasicParent {
 
     private final int field = 42;
+    private final char c = '\106';
     private final int[] array = new int[]{1, 2, 3};
 
     public boolean test() {
@@ -354,6 +355,7 @@ public class BasicTests extends BasicParent {
 
     private void accessTests() {
         System.out.println("Running access tests...");
+        Assert.assertEquals('F', c);
         Assert.assertEquals(42, field);
         Assert.assertEquals(42, this.field);
         Assert.assertEquals(28, super.field);

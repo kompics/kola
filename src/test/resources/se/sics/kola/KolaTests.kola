@@ -22,6 +22,7 @@ package se.sics.kola;
 
 event TestEvent1(String some)
 event TestEvent2(String some)
+event SingletonEvent
 
 port TestPort {
 	indication {
@@ -35,6 +36,11 @@ port TestPort {
 componentdef KolaTestChild {
 	provides TestPort test;
 
+	init (String a, String b) {
+		TestUtil.submit(a);
+		TestUtil.submit(b);
+	}
+
 	handle testHandler -> test : TestEvent1 e {
 		TestUtil.submit(e.some);
 		trigger {new TestEvent2("REPLIED")} -> test;
@@ -45,7 +51,7 @@ componentdef KolaTestC {
 
 	requires TestPort test;
 
-	component KolaTestChild() child;
+	component KolaTestChild("InitStringA", "InitStringB") child;
 
 	connect child -> test : TestPort;
 
@@ -55,6 +61,9 @@ componentdef KolaTestC {
     }
 
     handler testHandler : TestEvent2 e {
+    	if (SingletonEvent.event != null) {
+    		TestUtil.submit("SingletonEvent");
+    	}
     	TestUtil.submit(e.some);
     }
 

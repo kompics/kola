@@ -110,8 +110,11 @@ public class GenerationTest {
             ClassLoader cl = new URLClassLoader(new URL[]{(new File(targetPath)).toURI().toURL()});
             Class testClass = cl.loadClass("se.sics.kola.KolaTestC");
             Kompics.createAndStart(testClass, 1);
+            TestUtil.waitFor("InitStringA");
+            TestUtil.waitFor("InitStringB");
             TestUtil.waitFor("STARTED");
             TestUtil.waitFor("RECEIVED");
+            TestUtil.waitFor("SingletonEvent");
             TestUtil.waitFor("REPLIED");
             Kompics.shutdown();
             

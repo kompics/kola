@@ -51,4 +51,26 @@ public class Logger {
     public static void error(String msg) {
         error((Token)null, msg);
     }
+    
+    public static void warn(PName name, String msg) {
+        AName aname = (AName) name;
+        if (aname.getIdentifier().isEmpty()) {
+            error(msg);
+        } else {
+            error(aname.getIdentifier().peekFirst(), msg);
+        }
+                
+    }
+    
+    public static void warn(Token t, String msg) {
+        if (t != null) {
+            System.err.println("WARN at (l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
+        } else {
+            System.err.println("WARN: " + msg);
+        }
+    }
+    
+    public static void warn(String msg) {
+        error((Token)null, msg);
+    }
 }
