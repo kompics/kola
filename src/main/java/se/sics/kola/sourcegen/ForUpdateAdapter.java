@@ -24,6 +24,7 @@ import com.sun.codemodel.JAssignmentTarget;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JExpressionStatement;
+import com.sun.codemodel.JField;
 import com.sun.codemodel.JForLoop;
 import com.sun.codemodel.JInvocation;
 import se.sics.kola.analysis.DepthFirstAdapter;
@@ -83,6 +84,11 @@ class ForUpdateAdapter extends DepthFirstAdapter {
             JExpressionStatement expr = JExpr.assign(lhs, rhs);
             loop.update(expr);
             return expr;
+        }
+
+        @Override
+        public JField ref(String name) {
+            return JExpr.ref(name);
         }
         
     }

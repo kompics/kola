@@ -38,6 +38,11 @@ import se.sics.kola.node.AStringLiteral;
 public class LiteralAdapter extends DepthFirstAdapter {
 
     JExpression expr;
+    private final ResolutionContext context;
+    
+    public LiteralAdapter(ResolutionContext context) {
+        this.context = context;
+    }
 
     @Override
     public void caseAStringLiteral(AStringLiteral node) {
@@ -93,7 +98,7 @@ public class LiteralAdapter extends DepthFirstAdapter {
         } else if (node.getBooleanLiteral().getText().equalsIgnoreCase("false")) {
             expr = JExpr.FALSE;
         } else {
-            Logger.error(node.getBooleanLiteral(), "Not a valid boolean literal: " + node.getBooleanLiteral().getText());
+            Logger.error(context.getFile(), node.getBooleanLiteral(), "Not a valid boolean literal: " + node.getBooleanLiteral().getText());
         }
     }
 

@@ -46,7 +46,7 @@ class EnumBodyAdapter extends ClassBodyAdapter {
 //        }
 //        int mods = modap.getMods();
         if (!node.getModifier().isEmpty()) {
-            Logger.error(node.getIdentifier(), "CodeModel does not support modifiers for enum constants, yet...");
+            Logger.error(context.getFile(), node.getIdentifier(), "CodeModel does not support modifiers for enum constants, yet...");
         }
         JEnumConstant ec = clazz.enumConstant(node.getIdentifier().getText());
         EnumArgumentable ea = new EnumArgumentable(ec);
@@ -55,7 +55,7 @@ class EnumBodyAdapter extends ClassBodyAdapter {
             arg.apply(aa);
         }
         if (node.getClassBody() != null) {
-            Logger.error(node.getIdentifier(), "CodeModel does not support class bodies for enum constants, yet...");
+            Logger.error(context.getFile(), node.getIdentifier(), "CodeModel does not support class bodies for enum constants, yet...");
         }
     }
 

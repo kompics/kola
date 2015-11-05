@@ -51,8 +51,15 @@ public class LHSAdapter extends DepthFirstAdapter {
 
     @Override
     public void caseAExpressionLeftHandSide(AExpressionLeftHandSide node) {
-        JFieldRef field = context.resolveField((AName) node.getName());
-        expr = field;
+        AName aName = (AName) node.getName();
+        Field f = context.resolveField(aName);
+        if (f != null) {
+            expr = f.var;
+        } else {
+            String fieldName = nameToString(aName);
+            Logger.warn(context.getFile(), aName.getIdentifier().peekFirst(), "Could not resolve field, using direct ref instead: " + fieldName);
+            expr = JExpr.ref(fieldName);
+        }
     }
 
     @Override
@@ -72,15 +79,11 @@ public class LHSAdapter extends DepthFirstAdapter {
     public void caseAClassFieldAccess(AClassFieldAccess node) {
         AClassName cn = (AClassName) node.getClassName();
         AName name = (AName) cn.getName();
-        String typeName = nameToString(cn.getName());
-        try {
-            JClass jc = context.resolveType(typeName);
-            expr = jc.staticRef(node.getIdentifier().getText());
-        } catch (ClassNotFoundException ex) {
-            Logger.error(name.getIdentifier().peekFirst(), "Couldn't find type: " + typeName);
-        }
+        JClass jc = context.resolveType(name);
+        expr = jc.staticRef(node.getIdentifier().getText());
+
     }
-    
+
     @Override
     public void caseAArrayAccess(AArrayAccess node) {
         ExpressionAdapter eaArray = new ExpressionAdapter(new JExprParent(), context);

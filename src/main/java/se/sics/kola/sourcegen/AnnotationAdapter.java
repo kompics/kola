@@ -22,15 +22,12 @@ package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JClass;
-import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AElementValuePair;
 import se.sics.kola.node.AMarkerAnnotation;
-import se.sics.kola.node.AName;
 import se.sics.kola.node.ANormalAnnotation;
 import se.sics.kola.node.ASingleElementAnnotation;
 import se.sics.kola.node.PElementValuePair;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -49,44 +46,35 @@ class AnnotationAdapter extends DepthFirstAdapter {
 
     @Override
     public void inANormalAnnotation(ANormalAnnotation node) {
-        String name = nameToString(node.getName());
-        try {
-            JClass atype = context.resolveType(name);
-            ann = anno.annotate(atype);
-            //System.out.println("Param:" + node.getElementValuePair().toString());
-            for (PElementValuePair pevp : node.getElementValuePair()) {
-                AElementValuePair aevp = (AElementValuePair) pevp;
-                String id = aevp.getIdentifier() != null ? aevp.getIdentifier().getText() : "value";
-                AnnotationParameterAdapter apa = new AnnotationParameterAdapter(id, ann, context);
-                aevp.getElementValue().apply(apa);
-            }
-        } catch (ClassNotFoundException ex) {
-            AName aname = (AName) node.getName();
-            Logger.error(aname.getIdentifier().peekFirst(), "Couldn't find annotation type: " + name);
+
+        JClass atype = context.resolveType(node.getName());
+        ann = anno.annotate(atype);
+        //System.out.println("Param:" + node.getElementValuePair().toString());
+        for (PElementValuePair pevp : node.getElementValuePair()) {
+            AElementValuePair aevp = (AElementValuePair) pevp;
+            String id = aevp.getIdentifier() != null ? aevp.getIdentifier().getText() : "value";
+            AnnotationParameterAdapter apa = new AnnotationParameterAdapter(id, ann, context);
+            aevp.getElementValue().apply(apa);
         }
     }
 
     @Override
     public void inASingleElementAnnotation(ASingleElementAnnotation node) {
-        try {
-            JClass atype = context.resolveType(node.getIdentifier().getText());
-            ann = anno.annotate(atype);
-            //System.out.println("Param:" + node.getElementValue().toString());
-            AnnotationParameterAdapter apa = new AnnotationParameterAdapter("value", ann, context);
-            node.getElementValue().apply(apa);
-        } catch (ClassNotFoundException ex) {
-            Logger.error(node.getIdentifier(), "Couldn't find annotation type: " + node.getIdentifier().getText());
-        }
+
+        JClass atype = context.resolveType(node.getIdentifier());
+        ann = anno.annotate(atype);
+        //System.out.println("Param:" + node.getElementValue().toString());
+        AnnotationParameterAdapter apa = new AnnotationParameterAdapter("value", ann, context);
+        node.getElementValue().apply(apa);
+
     }
 
     @Override
     public void inAMarkerAnnotation(AMarkerAnnotation node) {
-        try {
-            JClass atype = context.resolveType(node.getIdentifier().getText());
-            ann = anno.annotate(atype);
-        } catch (ClassNotFoundException ex) {
-            Logger.error(node.getIdentifier(), "Couldn't find annotation type: " + node.getIdentifier().getText());
-        }
+
+        JClass atype = context.resolveType(node.getIdentifier());
+        ann = anno.annotate(atype);
+
     }
 
     public static interface Annotatable {

@@ -20,25 +20,18 @@
  */
 package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.ClassType;
-import com.sun.codemodel.JClass;
-import com.sun.codemodel.JClassAlreadyExistsException;
-import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.JDefinedClass;
-import com.sun.codemodel.JPackage;
-import com.sun.codemodel.writer.SingleStreamCodeWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassTypeDeclaration;
 import se.sics.kola.node.AComponentTypeDeclaration;
+import se.sics.kola.node.ADemandImportDeclaration;
 import se.sics.kola.node.AEventTypeDeclaration;
 import se.sics.kola.node.AInterfaceTypeDeclaration;
 import se.sics.kola.node.AJavaCompilationUnit;
 import se.sics.kola.node.APackageDeclaration;
 import se.sics.kola.node.APortTypeDeclaration;
 import se.sics.kola.node.ASingleImportDeclaration;
+import se.sics.kola.node.AStaticImportDeclaration;
+import se.sics.kola.node.ATypeImportDeclaration;
 import se.sics.kola.node.Start;
 import static se.sics.kola.sourcegen.Util.nameToString;
 
@@ -48,111 +41,95 @@ import static se.sics.kola.sourcegen.Util.nameToString;
  */
 public class JavaSourceGenerator extends DepthFirstAdapter {
 
-    JCodeModel unit;
-    JPackage pack;
-    //Map<String, JClass> imports = new HashMap<>();
     ResolutionContext context;
-
-    public JCodeModel getUnit() {
-        return this.unit;
+    
+    public JavaSourceGenerator(ResolutionContext rc) {
+        context = rc;
     }
 
-    public JPackage getPackage() {
-        return this.pack;
-    }
 
     @Override
     public void inStart(Start node) {
-        System.out.println("Generating output...");
+        System.out.println("Generating Java model for " + context.getFile());
     }
 
     @Override
     public void outStart(Start node) {
-        System.out.println("Done generating output.");
+        System.out.println("Done generating Java model for " + context.getFile());
     }
 
     @Override
     public void inAJavaCompilationUnit(AJavaCompilationUnit node) {
-        unit = new JCodeModel();
-        context = new ResolutionContext();
-        context.unit = unit;
-        context.imports = new HashMap<>();
+        // pushing on package declaration instead
     }
 
     @Override
     public void outAJavaCompilationUnit(AJavaCompilationUnit node) {
-        try {
-            System.out.println("DONE with compilation unit. Generated Code: ");
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            unit.build(new SingleStreamCodeWriter(out));
-            out.writeTo(System.out);
-//            unit = null;
-//            context = null;
-//            pack = null;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        context.popPackage();
     }
 
     @Override
     public void caseAPackageDeclaration(APackageDeclaration node) {
-        pack = unit._package(nameToString(node.getName()));
-        System.out.println("Creating package: " + pack.name());
+        String packageName = nameToString(node.getName());
+        System.out.println("Using package: " + packageName);
+        context.pushPackage(packageName);
     }
 
     @Override
     public void caseASingleImportDeclaration(ASingleImportDeclaration node) {
-        JClass c = unit.ref(nameToString(node.getName()));
-        System.out.println("Importing class: " + c.fullName());
-        context.imports.put(c.name(), c);
+        String c = nameToString(node.getName());
+        System.out.println("Importing type: " + c);
+        context.importType(c);
+    }
+    
+    @Override
+    public void caseATypeImportDeclaration(ATypeImportDeclaration node) {
+        String c = nameToString(node.getName());
+        System.out.println("Importing all types in: " + c);
+        context.importOnDemand(c);
+    }
+    
+    @Override
+    public void caseAStaticImportDeclaration(AStaticImportDeclaration node) {
+        String c = nameToString(node.getName());
+        System.out.println("Importing static member: " + c);
+        context.importStatic(c);
+    }
+    
+    @Override
+    public void caseADemandImportDeclaration(ADemandImportDeclaration node) {
+        String c = nameToString(node.getName());
+        System.out.println("Importing all static members from: " + c);
+        context.importStaticOnDemand(c);
     }
 
     @Override
     public void caseAClassTypeDeclaration(AClassTypeDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
 
     @Override
     public void caseAInterfaceTypeDeclaration(AInterfaceTypeDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
     
     @Override
     public void caseAPortTypeDeclaration(APortTypeDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
     
     @Override
     public void caseAEventTypeDeclaration(AEventTypeDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
     
     @Override
     public void caseAComponentTypeDeclaration(AComponentTypeDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new PackageTypeParent(pack));
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
-    }
-
-    class PackageTypeParent implements TypeDeclarationAdapter.TypeParent {
-
-        private final JPackage pack;
-
-        PackageTypeParent(JPackage pack) {
-            if (pack == null) {
-                this.pack = unit.rootPackage();
-            } else {
-                this.pack = pack;
-            }
-        }
-
-        @Override
-        public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
-            return pack._class(mods, name, classTypeVal);
-        }
-
     }
 }

@@ -9,12 +9,12 @@ public final class TTriggerKeyword extends Token
 {
     public TTriggerKeyword()
     {
-        super.setText("trigger");
+        super.setText("!trigger");
     }
 
     public TTriggerKeyword(int line, int pos)
     {
-        super.setText("trigger");
+        super.setText("!trigger");
         setLine(line);
         setPos(pos);
     }

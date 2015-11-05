@@ -9,12 +9,12 @@ public final class TUnsubscribeKeyword extends Token
 {
     public TUnsubscribeKeyword()
     {
-        super.setText("unsubscribe");
+        super.setText("!unsubscribe");
     }
 
     public TUnsubscribeKeyword(int line, int pos)
     {
-        super.setText("unsubscribe");
+        super.setText("!unsubscribe");
         setLine(line);
         setPos(pos);
     }

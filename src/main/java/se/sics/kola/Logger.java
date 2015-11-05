@@ -30,47 +30,47 @@ import se.sics.kola.node.Token;
  */
 public class Logger {
 
-    public static void error(PName name, String msg) {
+    public static void error(String file, PName name, String msg) {
         AName aname = (AName) name;
         if (aname.getIdentifier().isEmpty()) {
-            error(msg);
+            error(file, (Token) null, msg);
         } else {
-            error(aname.getIdentifier().peekFirst(), msg);
+            error(file, aname.getIdentifier().peekFirst(), msg);
         }
-                
+
     }
-    
-    public static void error(Token t, String msg) {
+
+    public static void error(String file, Token t, String msg) {
         if (t != null) {
-            System.err.println("ERROR at (l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
+            System.err.println("ERROR at (" + file + ", l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
         } else {
             System.err.println("ERROR: " + msg);
         }
     }
-    
+
     public static void error(String msg) {
-        error((Token)null, msg);
+        error(null, (Token) null, msg);
     }
-    
-    public static void warn(PName name, String msg) {
+
+    public static void warn(String file, PName name, String msg) {
         AName aname = (AName) name;
         if (aname.getIdentifier().isEmpty()) {
-            error(msg);
+            warn(file, (Token) null, msg);
         } else {
-            error(aname.getIdentifier().peekFirst(), msg);
+            warn(file, aname.getIdentifier().peekFirst(), msg);
         }
-                
+
     }
-    
-    public static void warn(Token t, String msg) {
+
+    public static void warn(String file, Token t, String msg) {
         if (t != null) {
-            System.err.println("WARN at (l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
+            System.err.println("WARN at (" + file + ", l: " + t.getLine() + ", p: " + t.getPos() + "): " + msg);
         } else {
             System.err.println("WARN: " + msg);
         }
     }
-    
+
     public static void warn(String msg) {
-        error((Token)null, msg);
+        error(null, (Token) null, msg);
     }
 }

@@ -42,16 +42,17 @@ import se.sics.kola.node.AVariableLastFormalParameter;
 import se.sics.kola.node.AVoidResult;
 import se.sics.kola.node.PArgument;
 import se.sics.kola.node.PTypeParameter;
+import se.sics.kola.node.TIdentifier;
 import se.sics.kola.sourcegen.AnnotationAdapter.Annotatable;
 import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameter;
 import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameterAdapter;
-import static se.sics.kola.sourcegen.Util.nameToString;
+import se.sics.kola.sourcegen.VarDeclAdapter.VariableScope;
 
 /**
  *
  * @author lkroll
  */
-public abstract class BodyAdapter extends DepthFirstAdapter {
+public abstract class BodyAdapter extends DepthFirstAdapter implements VariableScope {
 
     protected final ResolutionContext context;
 
@@ -84,13 +85,10 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
 
         @Override
         public void caseAName(AName aname) {
-            String name = nameToString(aname);
-            try {
-                JClass c = context.resolveType(name);
-                method._throws(c);
-            } catch (ClassNotFoundException ex) {
-                Logger.error(aname.getIdentifier().getFirst(), "Could not resolve type: " + name);
-            }
+
+            JClass c = context.resolveType(aname);
+            method._throws(c);
+
         }
     }
 
@@ -115,6 +113,7 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
     class MethodDeclaratorAdapter extends FormalParameterAdapter {
 
         String name;
+        TIdentifier id;
 
         MethodDeclaratorAdapter() {
             super(context);
@@ -122,7 +121,8 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
 
         @Override
         public void inAMethodDeclarator(AMethodDeclarator node) {
-            name = node.getIdentifier().getText();
+            id = node.getIdentifier();
+            name =id.getText();
         }
     }
 
@@ -157,7 +157,7 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
         public void caseAFormalParameter(AFormalParameter node) {
             FormalParameter param = new FormalParameter();
             param.var = (node.parent() instanceof AVariableLastFormalParameter);
-            FieldModifierAdapter fma = new FieldModifierAdapter();
+            FieldModifierAdapter fma = new FieldModifierAdapter(context);
             node.apply(fma);
             param.mods = fma.getMods();
             TypeAdapter ta = new TypeAdapter(context);
@@ -167,7 +167,7 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
             param.id = avdid.getIdentifier().getText();
             param.dim = avdid.getDim().size();
 
-            param.apply(constr);
+            param.apply(constr, context);
         }
     }
 
@@ -220,5 +220,4 @@ public abstract class BodyAdapter extends DepthFirstAdapter {
         }
     }
 
-    
 }

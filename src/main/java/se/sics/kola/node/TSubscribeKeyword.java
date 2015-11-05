@@ -9,12 +9,12 @@ public final class TSubscribeKeyword extends Token
 {
     public TSubscribeKeyword()
     {
-        super.setText("subscribe");
+        super.setText("!subscribe");
     }
 
     public TSubscribeKeyword(int line, int pos)
     {
-        super.setText("subscribe");
+        super.setText("!subscribe");
         setLine(line);
         setPos(pos);
     }

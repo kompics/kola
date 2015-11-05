@@ -21,7 +21,9 @@
 package se.sics.kola;
 
 import com.google.common.io.Files;
+import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -50,13 +52,14 @@ import se.sics.kola.node.Start;
 import se.sics.kola.parser.Parser;
 import se.sics.kola.parser.ParserException;
 import se.sics.kola.sourcegen.JavaSourceGenerator;
+import se.sics.kola.sourcegen.ResolutionContext;
 
 /**
  *
  * @author lkroll
  */
 public class Main {
-    
+
     private final static AtomicBoolean parsingError = new AtomicBoolean(false);
 
     public static void main(String[] args) {
@@ -106,21 +109,35 @@ public class Main {
                 System.err.println("Errors occurred during parsing stage. Exiting...");
                 System.exit(1);
             }
-            
+
+            ResolutionContext context = new ResolutionContext();
             for (Entry<File, Start> e : starts.entrySet()) {
                 System.out.println("Analysing AST for " + e.getKey());
                 Start ast = e.getValue();
+                context.setFile(e.getKey().getName());
                 // print
-                PrintAdapter printer = new PrintAdapter();
-                ast.apply(printer);
-                printer.print();
+//                PrintAdapter printer = new PrintAdapter();
+//                ast.apply(printer);
+//                printer.print();
                 // check program semantics
                 //ast.apply(new SemanticAnalyser());
                 // generate class file
-                JavaSourceGenerator jsg = new JavaSourceGenerator();
+                JavaSourceGenerator jsg = new JavaSourceGenerator(context);
                 ast.apply(jsg);
-                sw.writeOut(e.getKey(), jsg);
+                context.setFile(null);
             }
+//            if (!context.checkAllProxiesDeclared()) {
+//                Logger.error("There are unresolved types remaining. No code will be generated.");
+//                System.exit(1);
+//            }
+            context.printDeclaredTypes();
+            if (cmd.hasOption("debugPrint")) {
+                System.out.println("DONE with compilation unit. Generated Code: ");
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                context.unit.build(new SingleStreamCodeWriter(out));
+                out.writeTo(System.out);
+            }
+            sw.writeOut(context.unit);
         } catch (ParseException ex) {
             System.err.println("Invalid commandline options: " + ex.getMessage());
             formatter.printHelp("Usage: kolac <options> <source files>", opts);
@@ -155,7 +172,7 @@ public class Main {
             sb.append(ex.getToken().getText());
             sb.append("\'\n");
             sb.append(ex.getMessage());
-            Logger.error(ex.getToken(), sb.toString());
+            Logger.error(f.getName(), ex.getToken(), sb.toString());
             parsingError.set(true);
             return null;
         } catch (LexerException ex) {
@@ -166,7 +183,7 @@ public class Main {
             sb.append(ex.getToken().getText());
             sb.append("\'\n");
             sb.append(ex.getMessage());
-            Logger.error(ex.getToken(), sb.toString());
+            Logger.error(f.getName(), ex.getToken(), sb.toString());
             parsingError.set(true);
             return null;
         } catch (IOException ex) {
@@ -182,6 +199,8 @@ public class Main {
 
         opts.addOption("s", true, "Specify where to place generated source files");
         
+        opts.addOption("p", "debugPrint", false, "Print generated code to Console as well.");
+
         return opts;
     }
 
@@ -191,7 +210,7 @@ public class Main {
         for (String path : files) {
             todo.offer(new File(path));
         }
-        while(!todo.isEmpty()) {
+        while (!todo.isEmpty()) {
             File f = todo.poll();
             if (f.isDirectory()) {
                 File[] children = f.listFiles();
@@ -208,5 +227,4 @@ public class Main {
         return sfiles;
     }
 
-    
 }

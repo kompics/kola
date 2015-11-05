@@ -49,7 +49,7 @@ class CatchClauseAdapter extends DepthFirstAdapter {
     public void caseACatchClause(ACatchClause node) {
         // Formal Parameter
         ACatchFormalParameter paramNode = (ACatchFormalParameter) node.getCatchFormalParameter();
-        FieldModifierAdapter fma = new FieldModifierAdapter();
+        FieldModifierAdapter fma = new FieldModifierAdapter(context);
         paramNode.apply(fma);
         int mods = fma.getMods();
         ArrayList<JType> catchTypes = new ArrayList<>();

@@ -42,7 +42,9 @@ import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ABlockStatementWithoutTrailingSubstatement;
 import se.sics.kola.node.ABreakStatement;
 import se.sics.kola.node.ACatchTryStatement;
+import se.sics.kola.node.AConnectStatement;
 import se.sics.kola.node.AContinueStatement;
+import se.sics.kola.node.ADisconnectStatement;
 import se.sics.kola.node.ADoStatement;
 import se.sics.kola.node.AEnhancedForStatement;
 import se.sics.kola.node.AExpressionBasicForStatement;
@@ -56,6 +58,7 @@ import se.sics.kola.node.ANameBasicForStatement;
 import se.sics.kola.node.AResourceSpecification;
 import se.sics.kola.node.AResourcesTryStatement;
 import se.sics.kola.node.AStatementExpression;
+import se.sics.kola.node.ASubscribeStatement;
 import se.sics.kola.node.ASwitchBlock;
 import se.sics.kola.node.ASwitchBlockStatementGroup;
 import se.sics.kola.node.ASwitchStatement;
@@ -63,6 +66,7 @@ import se.sics.kola.node.ASynchronizedStatement;
 import se.sics.kola.node.AThrowStatement;
 import se.sics.kola.node.ATriggerStatement;
 import se.sics.kola.node.ATryWithResourcesStatement;
+import se.sics.kola.node.AUnsubscribeStatement;
 import se.sics.kola.node.AVariableDeclaratorId;
 import se.sics.kola.node.AVoidReturnStatement;
 import se.sics.kola.node.AWhileStatement;
@@ -117,19 +121,27 @@ public class StatementAdapter extends DepthFirstAdapter {
     @Override
     public void caseABlockStatementWithoutTrailingSubstatement(ABlockStatementWithoutTrailingSubstatement node) {
         JBlock block = parent.addSubBlock();
-        BlockStatementAdapter bsa = new BlockStatementAdapter(context, block);
-        node.apply(bsa);
+        context.pushStatementScope();
+        try {
+            BlockStatementAdapter bsa = new BlockStatementAdapter(context, block);
+            node.apply(bsa);
+        } finally {
+            context.popScope();
+        }
     }
 
     @Override
     public void caseALabeledStatement(ALabeledStatement node) {
         String labelName = node.getIdentifier().getText();
         JLabel label = parent.createLabel(labelName);
-        context.pushLevel();
-        context.addLabel(labelName, label);
-        StatementAdapter sa = new StatementAdapter(parent, context);
-        node.getStatement().apply(sa);
-        context.popLevel();
+        context.pushStatementScope();
+        try {
+            context.addLabel(labelName, label);
+            StatementAdapter sa = new StatementAdapter(parent, context);
+            node.getStatement().apply(sa);
+        } finally {
+            context.popScope();
+        }
     }
 
     @Override
@@ -138,7 +150,7 @@ public class StatementAdapter extends DepthFirstAdapter {
         node.getCond().apply(ea);
         JConditional cond = parent._if(ea.expr);
         JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
         node.getThen().apply(sa);
         JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
         if (stmt instanceof JBlock) {
@@ -156,7 +168,7 @@ public class StatementAdapter extends DepthFirstAdapter {
 
         // THEN
         JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
         node.getThen().apply(sa);
         JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
         if (stmt instanceof JBlock) {
@@ -167,7 +179,7 @@ public class StatementAdapter extends DepthFirstAdapter {
 
         // ELSE
         tmpBlock = new JBlock();
-        sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
         node.getElse().apply(sa);
         stmt = (JStatement) tmpBlock.getContents().get(0);
         if (stmt instanceof JBlock) {
@@ -183,7 +195,7 @@ public class StatementAdapter extends DepthFirstAdapter {
         node.getCond().apply(ea);
         JWhileLoop wl = parent._while(ea.expr);
         JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
         node.getDo().apply(sa);
         JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
         wl.setBody(stmt);
@@ -195,7 +207,7 @@ public class StatementAdapter extends DepthFirstAdapter {
         node.getCond().apply(ea);
         JDoLoop wl = parent._do(ea.expr);
         JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
+        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
         node.getDo().apply(sa);
         JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
         if (stmt instanceof JBlock) {
@@ -216,61 +228,74 @@ public class StatementAdapter extends DepthFirstAdapter {
     }
 
     private void basicForStatement(PForInit init, Node cond, PForUpdate update, PStatement _do) {
-        JForLoop loop = parent._for();
-        if (init != null) {
-            ForInitAdapter fia = new ForInitAdapter(loop, context);
-            init.apply(fia);
+        context.pushStatementScope();
+        try {
+            JForLoop loop = parent._for();
+            if (init != null) {
+                ForInitAdapter fia = new ForInitAdapter(loop, context);
+                init.apply(fia);
+            }
+            if (update != null) {
+                ForUpdateAdapter fua = new ForUpdateAdapter(loop, context);
+                update.apply(fua);
+            }
+            if (cond != null) {
+                ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+                cond.apply(ea);
+                loop.test(ea.expr);
+            }
+            JBlock tmpBlock = new JBlock();
+            StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
+            _do.apply(sa);
+            JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+            if (stmt instanceof JBlock) {
+                JBlock stmtBlock = (JBlock) stmt;
+                stmtBlock.setNewlineRequired(false);
+            }
+            loop.setBody(stmt);
+        } finally {
+            context.popScope();
         }
-        if (update != null) {
-            ForUpdateAdapter fua = new ForUpdateAdapter(loop, context);
-            update.apply(fua);
-        }
-        if (cond != null) {
-            ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-            cond.apply(ea);
-            loop.test(ea.expr);
-        }
-        JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
-        _do.apply(sa);
-        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
-        if (stmt instanceof JBlock) {
-            JBlock stmtBlock = (JBlock) stmt;
-            stmtBlock.setNewlineRequired(false);
-        }
-        loop.setBody(stmt);
     }
 
     @Override
     public void caseAEnhancedForStatement(AEnhancedForStatement node) {
-        // Formal Parameter
-        AFormalParameter paramNode = (AFormalParameter) node.getVariable();
-        FormalParameter param = new FormalParameter();
-        FieldModifierAdapter fma = new FieldModifierAdapter();
-        paramNode.apply(fma);
-        param.mods = fma.getMods();
-        TypeAdapter ta = new TypeAdapter(context);
-        paramNode.getType().apply(ta);
-        param.type = ta.type;
-        AVariableDeclaratorId avdid = (AVariableDeclaratorId) paramNode.getVariableDeclaratorId();
-        param.id = avdid.getIdentifier().getText();
-        param.dim = avdid.getDim().size();
+        context.pushStatementScope();
+        try {
+            // Formal Parameter
+            AFormalParameter paramNode = (AFormalParameter) node.getVariable();
+            FormalParameter param = new FormalParameter();
+            FieldModifierAdapter fma = new FieldModifierAdapter(context);
+            paramNode.apply(fma);
+            param.mods = fma.getMods();
+            TypeAdapter ta = new TypeAdapter(context);
+            paramNode.getType().apply(ta);
+            param.type = ta.type;
+            AVariableDeclaratorId avdid = (AVariableDeclaratorId) paramNode.getVariableDeclaratorId();
+            param.id = avdid.getIdentifier().getText();
+            param.dim = avdid.getDim().size();
+            
 
-        // Iterable
-        ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
-        node.getIterable().apply(ea);
+            // Iterable
+            ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
+            node.getIterable().apply(ea);
+            
+            JForEach loop = parent.forEach(param.type, param.id, ea.expr);
+            context.addField(param.id, loop.var(), Field.Type.NORMAL);
 
-        // Do
-        JBlock tmpBlock = new JBlock();
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock), context);
-        node.getDo().apply(sa);
-        JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
+            // Do
+            JBlock tmpBlock = new JBlock();
+            StatementAdapter sa = new StatementAdapter(new JBlockParent(tmpBlock, context), context);
+            node.getDo().apply(sa);
+            JStatement stmt = (JStatement) tmpBlock.getContents().get(0);
 //        if (stmt instanceof JBlock) {
 //            JBlock stmtBlock = (JBlock) stmt;
 //            stmtBlock.setNewlineRequired(false);
 //        }
-        JForEach loop = parent.forEach(param.type, param.id, ea.expr);
-        loop.setBody(stmt);
+            loop.setBody(stmt);
+        } finally {
+            context.popScope();
+        }
     }
 
     @Override
@@ -300,39 +325,39 @@ public class StatementAdapter extends DepthFirstAdapter {
             plabel.apply(sla);
         }
     }
-    
+
     @Override
     public void caseABreakStatement(ABreakStatement node) {
         if (node.getIdentifier() != null) {
             String id = node.getIdentifier().getText();
-            Optional<JLabel> olabel = context.findLabel(id);
+            Optional<JLabel> olabel = context.resolveLabel(id);
             if (olabel.isPresent()) {
                 parent._break(olabel.get());
             } else {
-                Logger.error(node.getIdentifier(), "Couldn't find label for id. Skipping break target.");
+                Logger.error(context.getFile(), node.getIdentifier(), "Couldn't find label for id. Skipping break target.");
                 parent._break();
             }
         } else {
             parent._break();
         }
     }
-    
+
     @Override
     public void caseAContinueStatement(AContinueStatement node) {
         if (node.getIdentifier() != null) {
             String id = node.getIdentifier().getText();
-            Optional<JLabel> olabel = context.findLabel(id);
+            Optional<JLabel> olabel = context.resolveLabel(id);
             if (olabel.isPresent()) {
                 parent._continue(olabel.get());
             } else {
-                Logger.error(node.getIdentifier(), "Couldn't find label for id. Skipping continue target.");
+                Logger.error(context.getFile(), node.getIdentifier(), "Couldn't find label for id. Skipping continue target.");
                 parent._continue();
             }
         } else {
             parent._continue();
         }
     }
-    
+
     @Override
     public void caseASynchronizedStatement(ASynchronizedStatement node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
@@ -341,12 +366,12 @@ public class StatementAdapter extends DepthFirstAdapter {
         BlockStatementAdapter bsa = new BlockStatementAdapter(context, syn.body());
         node.getBlock().apply(bsa);
     }
-    
+
     @Override
     public void caseACatchTryStatement(ACatchTryStatement node) {
         tryCatchFinallyStatement(null, node.getBlock(), node.getCatchClause(), null);
     }
-    
+
     @Override
     public void caseAFinallyTryStatement(AFinallyTryStatement node) {
         tryCatchFinallyStatement(null, node.getBlock(), node.getCatchClause(), node.getFinally());
@@ -355,42 +380,70 @@ public class StatementAdapter extends DepthFirstAdapter {
     private void tryCatchFinallyStatement(PResourceSpecification res, PBlock pblock, LinkedList<PCatchClause> catchClauses, PFinally pFinally) {
         JTryBlock tryBlock = parent._try();
         // Resources
-        if (res != null) {
-            AResourceSpecification ares = (AResourceSpecification) res;
-            for (PResource r : ares.getResource()) {
-                ResourceAdapter ra = new ResourceAdapter(tryBlock, context);
-                r.apply(ra);
+        context.pushStatementScope();
+        try {
+            if (res != null) {
+                AResourceSpecification ares = (AResourceSpecification) res;
+                for (PResource r : ares.getResource()) {
+                    ResourceAdapter ra = new ResourceAdapter(tryBlock, context);
+                    r.apply(ra);
+                }
             }
-        }
-        // TryBlock
-        BlockStatementAdapter bsa = new BlockStatementAdapter(context, tryBlock.body());
-        pblock.apply(bsa);
-        // CatchBlocks
-        for (PCatchClause catchClause : catchClauses) {
-            CatchClauseAdapter cca = new CatchClauseAdapter(tryBlock, context);
-            catchClause.apply(cca);
-        }
-        if (pFinally != null) {
-            BlockStatementAdapter bsaf = new BlockStatementAdapter(context, tryBlock._finally());
-            pFinally.apply(bsaf);
+            // TryBlock
+            BlockStatementAdapter bsa = new BlockStatementAdapter(context, tryBlock.body());
+            pblock.apply(bsa);
+            // CatchBlocks
+            for (PCatchClause catchClause : catchClauses) {
+                CatchClauseAdapter cca = new CatchClauseAdapter(tryBlock, context);
+                catchClause.apply(cca);
+            }
+            if (pFinally != null) {
+                BlockStatementAdapter bsaf = new BlockStatementAdapter(context, tryBlock._finally());
+                pFinally.apply(bsaf);
+            }
+        } finally {
+            context.popScope();
         }
     }
-    
+
     @Override
     public void caseAThrowStatement(AThrowStatement node) {
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.getThrowable().apply(ea);
         parent._throw(ea.expr);
     }
-    
+
     @Override
     public void caseAResourcesTryStatement(AResourcesTryStatement node) {
         ATryWithResourcesStatement twrs = (ATryWithResourcesStatement) node.getTryWithResourcesStatement();
         tryCatchFinallyStatement(twrs.getResourceSpecification(), twrs.getBlock(), twrs.getCatchClause(), twrs.getFinally());
     }
-    
+
     // KOLA
-    
+    @Override
+    public void caseAConnectStatement(AConnectStatement node) {
+        KolaStatementAdapter ksa = new KolaStatementAdapter(context, parent);
+        node.apply(ksa);
+    }
+
+    @Override
+    public void caseADisconnectStatement(ADisconnectStatement node) {
+        KolaStatementAdapter ksa = new KolaStatementAdapter(context, parent);
+        node.apply(ksa);
+    }
+
+    @Override
+    public void caseASubscribeStatement(ASubscribeStatement node) {
+        KolaStatementAdapter ksa = new KolaStatementAdapter(context, parent);
+        node.apply(ksa);
+    }
+
+    @Override
+    public void caseAUnsubscribeStatement(AUnsubscribeStatement node) {
+        KolaStatementAdapter ksa = new KolaStatementAdapter(context, parent);
+        node.apply(ksa);
+    }
+
     @Override
     public void caseATriggerStatement(ATriggerStatement node) {
         ExpressionAdapter eaEvent = new ExpressionAdapter(new JExprParent(), context);
@@ -423,19 +476,19 @@ public class StatementAdapter extends DepthFirstAdapter {
         public JForEach forEach(JType type, String id, JExpression iterable);
 
         public JSwitch _switch(JExpression test);
-        
+
         public void _break();
-        
+
         public void _break(JLabel label);
-        
+
         public void _continue();
-        
+
         public void _continue(JLabel label);
 
         public JSynchronized _synchronized(JExpression expr);
-        
+
         public JTryBlock _try();
-        
+
         public void _throw(JExpression exp);
     }
 }

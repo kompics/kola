@@ -24,6 +24,7 @@ import com.sun.codemodel.JAssignmentTarget;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JExpressionStatement;
+import com.sun.codemodel.JField;
 import com.sun.codemodel.JForLoop;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JType;
@@ -61,17 +62,19 @@ class ForInitAdapter extends DepthFirstAdapter {
     @Override
     public void caseALocalForInit(ALocalForInit node) {
         ALocalVariableDeclaration decl = (ALocalVariableDeclaration) node.getLocalVariableDeclaration();
-        final FieldModifierAdapter fma = new FieldModifierAdapter();
+        final FieldModifierAdapter fma = new FieldModifierAdapter(context);
         for (PModifier mod : decl.getModifier()) {
             mod.apply(fma);
         }
         final TypeAdapter ta = new TypeAdapter(context);
         decl.getType().apply(ta);
-        VarDeclAdapter vda = new VarDeclAdapter(ta.type, context, new VarDeclAdapter.Scope() {
+        VarDeclAdapter vda = new VarDeclAdapter(fma.getMods(), ta.type, context, new VarDeclAdapter.VariableScope() {
 
             @Override
-            public JVar declare(JType type, String name, JExpression init) {
-                return loop.init(fma.getMods(), type, name, init);
+            public JVar declare(int mods, JType type, String name, JExpression init) {
+                JVar var = loop.init(mods, type, name, init);
+                context.addField(name, var, Field.Type.NORMAL);
+                return var;
             }
 
         });
@@ -111,6 +114,11 @@ class ForInitAdapter extends DepthFirstAdapter {
             JExpressionStatement expr = JExpr.assign(lhs, rhs);
             loop.init(expr);
             return expr;
+        }
+
+        @Override
+        public JField ref(String name) {
+            return JExpr.ref(name);
         }
         
     }

@@ -1171,90 +1171,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
         outATypeBound(node);
     }
 
-    public void inASubscribeKolaKeyword(ASubscribeKolaKeyword node)
-    {
-        defaultIn(node);
-    }
-
-    public void outASubscribeKolaKeyword(ASubscribeKolaKeyword node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseASubscribeKolaKeyword(ASubscribeKolaKeyword node)
-    {
-        inASubscribeKolaKeyword(node);
-        if(node.getSubscribeKeyword() != null)
-        {
-            node.getSubscribeKeyword().apply(this);
-        }
-        outASubscribeKolaKeyword(node);
-    }
-
-    public void inAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
-    {
-        inAUnsubscribeKolaKeyword(node);
-        if(node.getUnsubscribeKeyword() != null)
-        {
-            node.getUnsubscribeKeyword().apply(this);
-        }
-        outAUnsubscribeKolaKeyword(node);
-    }
-
-    public void inAConnectKolaKeyword(AConnectKolaKeyword node)
-    {
-        defaultIn(node);
-    }
-
-    public void outAConnectKolaKeyword(AConnectKolaKeyword node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseAConnectKolaKeyword(AConnectKolaKeyword node)
-    {
-        inAConnectKolaKeyword(node);
-        if(node.getConnectKeyword() != null)
-        {
-            node.getConnectKeyword().apply(this);
-        }
-        outAConnectKolaKeyword(node);
-    }
-
-    public void inADisconnectKolaKeyword(ADisconnectKolaKeyword node)
-    {
-        defaultIn(node);
-    }
-
-    public void outADisconnectKolaKeyword(ADisconnectKolaKeyword node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node)
-    {
-        inADisconnectKolaKeyword(node);
-        if(node.getDisconnectKeyword() != null)
-        {
-            node.getDisconnectKeyword().apply(this);
-        }
-        outADisconnectKolaKeyword(node);
-    }
-
     public void inARequiresKolaKeyword(ARequiresKolaKeyword node)
     {
         defaultIn(node);
@@ -1295,27 +1211,6 @@ public class ReversedDepthFirstAdapter extends AnalysisAdapter
             node.getProvidesKeyword().apply(this);
         }
         outAProvidesKolaKeyword(node);
-    }
-
-    public void inATriggerKolaKeyword(ATriggerKolaKeyword node)
-    {
-        defaultIn(node);
-    }
-
-    public void outATriggerKolaKeyword(ATriggerKolaKeyword node)
-    {
-        defaultOut(node);
-    }
-
-    @Override
-    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
-    {
-        inATriggerKolaKeyword(node);
-        if(node.getTriggerKeyword() != null)
-        {
-            node.getTriggerKeyword().apply(this);
-        }
-        outATriggerKolaKeyword(node);
     }
 
     public void inAEventKolaKeyword(AEventKolaKeyword node)

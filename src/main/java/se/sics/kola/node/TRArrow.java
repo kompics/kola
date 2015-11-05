@@ -9,12 +9,12 @@ public final class TRArrow extends Token
 {
     public TRArrow()
     {
-        super.setText("->");
+        super.setText("=>");
     }
 
     public TRArrow(int line, int pos)
     {
-        super.setText("->");
+        super.setText("=>");
         setLine(line);
         setPos(pos);
     }

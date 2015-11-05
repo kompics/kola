@@ -357,30 +357,6 @@ public class AnalysisAdapter implements Analysis
     }
 
     @Override
-    public void caseASubscribeKolaKeyword(ASubscribeKolaKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseAConnectKolaKeyword(AConnectKolaKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
     public void caseARequiresKolaKeyword(ARequiresKolaKeyword node)
     {
         defaultCase(node);
@@ -388,12 +364,6 @@ public class AnalysisAdapter implements Analysis
 
     @Override
     public void caseAProvidesKolaKeyword(AProvidesKolaKeyword node)
-    {
-        defaultCase(node);
-    }
-
-    @Override
-    public void caseATriggerKolaKeyword(ATriggerKolaKeyword node)
     {
         defaultCase(node);
     }

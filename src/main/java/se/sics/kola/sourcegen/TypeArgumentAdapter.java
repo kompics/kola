@@ -22,7 +22,6 @@ package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JClass;
 import java.util.LinkedList;
-import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassArrayType;
 import se.sics.kola.node.AClassOrInterfaceType;
@@ -32,7 +31,6 @@ import se.sics.kola.node.APrimitiveArrayType;
 import se.sics.kola.node.ASuperWildcardBounds;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.PTypeArguments;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -47,29 +45,24 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
         this.context = context;
         //this.type = type;
     }
-    
+
     @Override
     public void outAExtendsWildcardBounds(AExtendsWildcardBounds node) {
         type = type.wildcard();
     }
-    
+
     @Override
     public void outASuperWildcardBounds(ASuperWildcardBounds node) {
         type = type.superWildcard();
     }
-    
+
     @Override
     public void caseAClassOrInterfaceType(AClassOrInterfaceType node) {
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
         AName firstName = (AName) spec.getName();
         PTypeArguments lastArgsMaybe = node.getTypeArguments();
-        JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        JClass ctype = context.resolveType(firstName);
+
         LinkedList<Util.IdWithOptArgs> list = Util.shiftTDS(spec, context);
         Util.IdWithOptArgs lastIwoa = list.getLast();
         if (lastIwoa != null) {
@@ -85,12 +78,9 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (Util.IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -99,7 +89,7 @@ public class TypeArgumentAdapter extends DepthFirstAdapter {
         }
         type = ctype;
     }
-    
+
     @Override
     public void outAClassArrayType(AClassArrayType node) {
         arrayfy(node.getDim().size());

@@ -43,8 +43,10 @@ import se.sics.kola.node.AVolatileModifier;
 class TypeModifierAdapter extends DepthFirstAdapter {
 
     private int mods = 0;
+    private final ResolutionContext context;
 
-    TypeModifierAdapter() {
+    TypeModifierAdapter(ResolutionContext context) {
+        this.context = context;
     }
 
     public int getMods() {
@@ -83,27 +85,27 @@ class TypeModifierAdapter extends DepthFirstAdapter {
 
     @Override
     public void inAStrictfpModifier(AStrictfpModifier node) {
-        Logger.error(node.getStrictfpKeyword(), "CodeModel does not support strictfp modifier. Ignoring...");
+        Logger.error(context.getFile(), node.getStrictfpKeyword(), "CodeModel does not support strictfp modifier. Ignoring...");
     }
 
     @Override
     public void inATransientModifier(ATransientModifier node) {
-        Logger.error(node.getTransientKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getTransientKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override
     public void inAVolatileModifier(AVolatileModifier node) {
-        Logger.error(node.getVolatileKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getVolatileKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override
     public void inASynchronizedModifier(ASynchronizedModifier node) {
-        Logger.error(node.getSynchronizedKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getSynchronizedKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override
     public void inANativeModifier(ANativeModifier node) {
-        Logger.error(node.getNativeKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getNativeKeyword(), "Modifier not supported here. Ignoring...");
     }
     
     @Override

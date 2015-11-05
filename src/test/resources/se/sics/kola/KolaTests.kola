@@ -24,13 +24,27 @@ event TestEvent1(String some)
 event TestEvent2(String some)
 event SingletonEvent
 
-port TestPort {
-	indication {
-		TestEvent2
-	}
-	request {
-		TestEvent1
-	}
+componentdef KolaTestC {
+
+	requires TestPort test;
+
+	component KolaTestChild("InitStringA", "InitStringB") child;
+
+	!connect child => test : TestPort;
+
+    handle startHandler => control : Start e {
+    	TestUtil.submit("STARTED");
+    	!trigger new TestEvent1("RECEIVED") => test;
+    }
+
+    handler testHandler : TestEvent2 e {
+    	if (SingletonEvent.event != null) {
+    		TestUtil.submit("SingletonEvent");
+    	}
+    	TestUtil.submit(e.some);
+    }
+
+    !subscribe testHandler => test;
 }
 
 componentdef KolaTestChild {
@@ -41,32 +55,8 @@ componentdef KolaTestChild {
 		TestUtil.submit(b);
 	}
 
-	handle testHandler -> test : TestEvent1 e {
+	handle testHandler => test : TestEvent1 e {
 		TestUtil.submit(e.some);
-		trigger {new TestEvent2("REPLIED")} -> test;
+		!trigger new TestEvent2("REPLIED") => test;
 	}
 }
-
-componentdef KolaTestC {
-
-	requires TestPort test;
-
-	component KolaTestChild("InitStringA", "InitStringB") child;
-
-	connect child -> test : TestPort;
-
-    handle startHandler -> control : Start e {
-    	TestUtil.submit("STARTED");
-    	trigger {new TestEvent1("RECEIVED")} -> test;
-    }
-
-    handler testHandler : TestEvent2 e {
-    	if (SingletonEvent.event != null) {
-    		TestUtil.submit("SingletonEvent");
-    	}
-    	TestUtil.submit(e.some);
-    }
-
-    subscribe testHandler -> test;
-}
-

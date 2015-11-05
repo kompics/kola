@@ -24,13 +24,14 @@ import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JClass;
-import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JFieldVar;
 import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JMod;
 import com.sun.codemodel.JType;
+import com.sun.codemodel.JTypeVar;
+import com.sun.codemodel.JVar;
 import java.util.LinkedList;
 import java.util.List;
 import se.sics.kola.Logger;
@@ -49,6 +50,7 @@ import se.sics.kola.node.AVariableLastFormalParameter;
 import se.sics.kola.node.PInterfaceType;
 import se.sics.kola.node.PModifier;
 import se.sics.kola.node.PTypeParameter;
+import se.sics.kola.node.TIdentifier;
 import se.sics.kola.sourcegen.AnnotationAdapter.Annotatable;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.KompicsEvent;
@@ -60,26 +62,22 @@ import se.sics.kompics.PortType;
  */
 public class TypeDeclarationAdapter extends DepthFirstAdapter {
 
-    private final TypeParent parent;
     private final ResolutionContext context;
 
-    TypeDeclarationAdapter(ResolutionContext context, TypeParent parent) {
+    TypeDeclarationAdapter(ResolutionContext context) {
         this.context = context;
-        this.parent = parent;
     }
 
     @Override
     public void caseANormalClassDeclaration(ANormalClassDeclaration node) {
 
-        context.pushLevel();
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.CLASS);
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
             for (PModifier m : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
@@ -87,14 +85,15 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             for (PTypeParameter ptp : node.getTypeParameter()) {
                 TypeParameterAdapter tpa = new TypeParameterAdapter(context);
                 ptp.apply(tpa);
+                JTypeVar jtv = null;
                 if (tpa.bounds.isEmpty()) {
-                    c.generify(tpa.name);
+                    jtv = c.generify(tpa.name);
                 } else {
                     for (JClass bound : tpa.bounds) {
-                        c.generify(tpa.name, bound);
+                        jtv = c.generify(tpa.name, bound);
                     }
                 }
-                context.addGeneric(tpa.name);
+                context.addGeneric(tpa.name, jtv);
             }
             if (node.getParent() != null) {
                 TypeAdapter ta = new TypeAdapter(context);
@@ -115,25 +114,21 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             System.out.println("Creating class: " + c.fullName());
             ClassBodyAdapter cba = new ClassBodyAdapter(context, c);
             node.getClassBody().apply(cba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
     }
 
     @Override
     public void caseAEnumDeclaration(AEnumDeclaration node) {
 
-        context.pushLevel();
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.ENUM);
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.ENUM);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
             for (PModifier m : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
@@ -147,25 +142,23 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             System.out.println("Creating enum: " + c.fullName());
             EnumBodyAdapter eba = new EnumBodyAdapter(context, c);
             node.getEnumBody().apply(eba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
     }
 
     @Override
-    public void caseANormalInterfaceDeclaration(ANormalInterfaceDeclaration node) {
+    public void caseANormalInterfaceDeclaration(ANormalInterfaceDeclaration node
+    ) {
 
-        context.pushLevel();
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.INTERFACE);
+
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.INTERFACE);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
             for (PModifier m : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
@@ -173,14 +166,15 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             for (PTypeParameter ptp : node.getTypeParameter()) {
                 TypeParameterAdapter tpa = new TypeParameterAdapter(context);
                 ptp.apply(tpa);
+                JTypeVar jtv = null;
                 if (tpa.bounds.isEmpty()) {
-                    c.generify(tpa.name);
+                    jtv = c.generify(tpa.name);
                 } else {
                     for (JClass bound : tpa.bounds) {
-                        c.generify(tpa.name, bound);
+                        jtv = c.generify(tpa.name, bound);
                     }
                 }
-                context.addGeneric(tpa.name);
+                context.addGeneric(tpa.name, jtv);
             }
             for (PInterfaceType ift : node.getExtendsInterfaces()) {
                 TypeAdapter ta = new TypeAdapter(context);
@@ -190,25 +184,24 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             System.out.println("Creating interface: " + c.fullName());
             InterfaceBodyAdapter iba = new InterfaceBodyAdapter(context, c);
             node.getInterfaceBody().apply(iba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
+
     }
 
     @Override
-    public void caseAAnnotationTypeDeclaration(AAnnotationTypeDeclaration node) {
+    public void caseAAnnotationTypeDeclaration(AAnnotationTypeDeclaration node
+    ) {
 
-        context.pushLevel();
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.ANNOTATION_TYPE_DECL);
+
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.ANNOTATION_TYPE_DECL);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
             for (PModifier m : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
@@ -217,83 +210,90 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
             System.out.println("Creating annotation: " + c.fullName());
             AnnotationBodyAdapter aba = new AnnotationBodyAdapter(context, c);
             node.getAnnotationTypeBody().apply(aba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
     }
 
     @Override
-    public void caseAComponentDeclaration(AComponentDeclaration node) {
-        context.pushLevel();
+    public void caseAComponentDeclaration(AComponentDeclaration node
+    ) {
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.CLASS);
+
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
 
             c._extends(ComponentDefinition.class);
-            c.mods().setPublic(); // components must be public so Kompics can load them
-            for (PModifier m : node.getModifier()) {
+            c.mods()
+                    .setPublic(); // components must be public so Kompics can load them
+            for (PModifier m
+                    : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
             }
-            for (PTypeParameter ptp : node.getTypeParameter()) {
+            for (PTypeParameter ptp
+                    : node.getTypeParameter()) {
                 TypeParameterAdapter tpa = new TypeParameterAdapter(context);
                 ptp.apply(tpa);
+                JTypeVar jtv = null;
                 if (tpa.bounds.isEmpty()) {
-                    c.generify(tpa.name);
+                    jtv = c.generify(tpa.name);
                 } else {
                     for (JClass bound : tpa.bounds) {
-                        c.generify(tpa.name, bound);
+                        jtv = c.generify(tpa.name, bound);
                     }
                 }
-                context.addGeneric(tpa.name);
+                context.addGeneric(tpa.name, jtv);
             }
 
-            System.out.println("Creating component definition: " + c.fullName());
+            System.out.println(
+                    "Creating component definition: " + c.fullName());
             ComponentBodyAdapter cba = new ComponentBodyAdapter(context, c);
-            node.getComponentBody().apply(cba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
+
+            node.getComponentBody()
+                    .apply(cba);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
+
     }
 
     @Override
-    public void caseAEventDeclaration(AEventDeclaration node) {
-        context.pushLevel();
-        try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
+    public void caseAEventDeclaration(AEventDeclaration node
+    ) {
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.CLASS);
 
+        try {
             c._implements(KompicsEvent.class);
-            c.mods().setPublic(); // events should be public so Kompics can load them
-            for (PModifier m : node.getModifier()) {
+            c.mods()
+                    .setPublic(); // events should be public so Kompics can load them
+            for (PModifier m
+                    : node.getModifier()) {
                 AnnotationAdapter annap = new AnnotationAdapter(new ClassAnnotatable(c), context);
                 m.apply(annap);
             }
-            for (PTypeParameter ptp : node.getTypeParameter()) {
+            for (PTypeParameter ptp
+                    : node.getTypeParameter()) {
                 TypeParameterAdapter tpa = new TypeParameterAdapter(context);
                 ptp.apply(tpa);
+                JTypeVar jtv = null;
                 if (tpa.bounds.isEmpty()) {
-                    c.generify(tpa.name);
+                    jtv = c.generify(tpa.name);
                 } else {
                     for (JClass bound : tpa.bounds) {
-                        c.generify(tpa.name, bound);
+                        jtv = c.generify(tpa.name, bound);
                     }
                 }
-                context.addGeneric(tpa.name);
+                context.addGeneric(tpa.name, jtv);
             }
 //            if (node.getParent() != null) {
 //                TypeAdapter ta = new TypeAdapter(context);
@@ -306,28 +306,43 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
 //                }
 //                c._extends(ta.type.boxify());
 //            }
-            for (PInterfaceType ift : node.getInterfaceType()) {
+            for (PInterfaceType ift
+                    : node.getInterfaceType()) {
                 TypeAdapter ta = new TypeAdapter(context);
                 ift.apply(ta);
                 c._implements(ta.type.boxify());
             }
 
-            if (node.getHeaderFields() != null) { // generate constructors
+            if (node.getHeaderFields()
+                    != null) { // generate constructors
                 FormalParameterAdapter fpa = new FormalParameterAdapter(context);
                 node.getHeaderFields().apply(fpa);
                 if (!fpa.params.isEmpty()) {
-                    JMethod constr = c.constructor(JMod.PUBLIC);
-                    JBlock constrBody = constr.body();
-                    for (FormalParameter fp : fpa.params) {
-                        int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
-                        JFieldVar v = c.field(fmods, fp.typeWithDim(), fp.id);
-                        if (v.mods().is(JMod.FINAL)) { // variables can only be either final or not
-                            fp.mods = JMod.FINAL;
-                        } else {
-                            fp.mods = 0;
+                    JMethod constr = context.constructor(JMod.PUBLIC);
+                    try {
+
+                        for (FormalParameter fp : fpa.params) {
+                            int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
+                            JFieldVar v = c.field(fmods, fp.typeWithDim(), fp.id);
+                            if (v.mods().is(JMod.FINAL)) { // variables can only be either final or not
+                                fp.mods = JMod.FINAL;
+                            } else {
+                                fp.mods = 0;
+                            }
+                            fp.apply(constr, context);
                         }
-                        fp.apply(constr);
-                        constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
+
+                        JBlock constrBody = constr.body();
+                        context.pushStatementScope();
+                        try {
+                            for (FormalParameter fp : fpa.params) {
+                                constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
+                            }
+                        } finally {
+                            context.popScope();
+                        }
+                    } finally {
+                        context.popScope();
                     }
                 }
             } else { // assume singleton event
@@ -335,34 +350,36 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
                 c.constructor(JMod.PRIVATE).body();
             }
 
-            System.out.println("Creating event: " + c.fullName());
-            if (node.getClassBody() != null) {
+            System.out.println(
+                    "Creating event: " + c.fullName());
+            if (node.getClassBody()
+                    != null) {
                 ClassBodyAdapter cba = new ClassBodyAdapter(context, c);
                 node.getClassBody().apply(cba);
             }
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
         } finally {
-            context.popLevel();
+            context.popScope();
         }
     }
 
     @Override
-    public void caseAPortDeclaration(APortDeclaration node) {
+    public void caseAPortDeclaration(APortDeclaration node
+    ) {
+        TypeModifierAdapter modap = new TypeModifierAdapter(context);
+        for (PModifier m : node.getModifier()) {
+            m.apply(modap);
+        }
+        int mods = modap.getMods();
+        JDefinedClass c = context.declare(mods, node.getIdentifier(), ClassType.CLASS);
+
         try {
-            TypeModifierAdapter modap = new TypeModifierAdapter();
-            for (PModifier m : node.getModifier()) {
-                m.apply(modap);
-            }
-            int mods = modap.getMods();
-            JDefinedClass c = parent._class(mods, node.getIdentifier().getText(), ClassType.CLASS);
             c.mods().setPublic(); // ports should be public so Kompics can load them
-            context.declaredClasses.put(node.getIdentifier().getText(), c);
             c._extends(PortType.class);
             PortBodyAdapter pba = new PortBodyAdapter(c.instanceInit(), context);
+
             node.getPortBody().apply(pba);
-        } catch (JClassAlreadyExistsException ex) {
-            throw new RuntimeException(ex);
+        } finally {
+            context.popScope();
         }
     }
 
@@ -395,13 +412,14 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
         public void caseAFormalParameter(AFormalParameter node) {
             FormalParameter param = new FormalParameter();
             param.var = (node.parent() instanceof AVariableLastFormalParameter);
-            FieldModifierAdapter fma = new FieldModifierAdapter();
+            FieldModifierAdapter fma = new FieldModifierAdapter(context);
             node.apply(fma);
             param.mods = fma.getMods();
             TypeAdapter ta = new TypeAdapter(context);
             node.getType().apply(ta);
             param.type = ta.type;
             AVariableDeclaratorId avdid = (AVariableDeclaratorId) node.getVariableDeclaratorId();
+            param.identifier = avdid.getIdentifier();
             param.id = avdid.getIdentifier().getText();
             param.dim = avdid.getDim().size();
 
@@ -415,13 +433,16 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
         boolean var;
         JType type;
         String id;
+        TIdentifier identifier;
         int dim;
 
-        void apply(JMethod method) {
+        void apply(JMethod method, ResolutionContext context) {
             if (var) {
-                method.varParam(typeWithDim(), id);
+                JVar var = method.varParam(typeWithDim(), id);
+                context.addField(id, var, Field.Type.NORMAL);
             } else {
-                method.param(mods, typeWithDim(), id);
+                JVar var = method.param(mods, typeWithDim(), id);
+                context.addField(id, var, Field.Type.NORMAL);
             }
         }
 
@@ -434,8 +455,4 @@ public class TypeDeclarationAdapter extends DepthFirstAdapter {
         }
     }
 
-    public static interface TypeParent {
-
-        public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException;
-    }
 }

@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import org.javatuples.Pair;
 import se.sics.kola.Logger;
 import se.sics.kola.node.AArgsWithName;
 import se.sics.kola.node.AName;
@@ -59,6 +60,18 @@ public class Util {
             }
         }
         return sb.toString();
+    }
+    
+    public static Pair<String, String> nameToMethod(PName pname) {
+        AName name = (AName) pname;
+        return nameToMethod(name.getIdentifier());
+    }
+    
+    public static Pair<String, String> nameToMethod(LinkedList<TIdentifier> ids) {
+        LinkedList<TIdentifier> idsCopy = new LinkedList<>(ids);
+        String methodName = idsCopy.pollLast().getText();
+        String prefix = nameToString(idsCopy);
+        return Pair.with(prefix, methodName);
     }
     
     public static String kolaKWToString(PKolaKeyword kw) {

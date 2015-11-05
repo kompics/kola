@@ -24,7 +24,6 @@ import com.google.common.base.Optional;
 import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JClass;
-import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
@@ -34,23 +33,21 @@ import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JMod;
 import com.sun.codemodel.JType;
+import com.sun.codemodel.JVar;
 import java.util.LinkedList;
 import java.util.List;
 import se.sics.kola.Logger;
 import se.sics.kola.node.AChildDeclaration;
-import se.sics.kola.node.AConnectStatement;
 import se.sics.kola.node.AHandleDeclaration;
 import se.sics.kola.node.AHandlerDeclaration;
+import se.sics.kola.node.AHandlingComponentBodyDeclaration;
 import se.sics.kola.node.AInitDeclaration;
 import se.sics.kola.node.AProvidesPortFieldDeclaration;
 import se.sics.kola.node.ARequiresPortFieldDeclaration;
-import se.sics.kola.node.ASubscribeStatement;
-import se.sics.kola.node.AUnsubscribeStatement;
 import se.sics.kola.node.PBlock;
 import se.sics.kola.node.PModifier;
+import se.sics.kola.node.TIdentifier;
 import se.sics.kola.sourcegen.ArgumentAdapter.Argumentable;
-import se.sics.kola.sourcegen.ResolutionContext.FieldObject;
-import static se.sics.kola.sourcegen.Util.nameToString;
 import se.sics.kompics.Component;
 import se.sics.kompics.Handler;
 import se.sics.kompics.Init;
@@ -81,42 +78,6 @@ class ComponentBodyAdapter extends ClassBodyAdapter {
     }
 
     @Override
-    public void caseAHandleDeclaration(AHandleDeclaration node) {
-        String handlerId = node.getHandlerId().getText();
-        String portId = node.getPortId().getText();
-        String eventId = node.getEventId().getText();
-        TypeAdapter ta = new TypeAdapter(context);
-        node.getClassType().apply(ta);
-        JFieldRef handlerField = createHandler(handlerId, ta.type, eventId, node.getBlock());
-        JInvocation sub = initBlock.invoke("subscribe");
-        sub.arg(handlerField);
-        sub.arg(JExpr.ref(portId));
-    }
-
-    @Override
-    public void caseAHandlerDeclaration(AHandlerDeclaration node) {
-        String handlerId = node.getHandlerId().getText();
-        String eventId = node.getEventId().getText();
-        TypeAdapter ta = new TypeAdapter(context);
-        node.getClassType().apply(ta);
-        JFieldRef handlerField = createHandler(handlerId, ta.type, eventId, node.getBlock());
-    }
-
-    @Override
-    public void caseASubscribeStatement(ASubscribeStatement node) {
-        JInvocation sub = initBlock.invoke("subscribe");
-        sub.arg(JExpr.ref(nameToString(node.getHandlerId())));
-        sub.arg(JExpr.ref(nameToString(node.getPortId())));
-    }
-
-    @Override
-    public void caseAUnsubscribeStatement(AUnsubscribeStatement node) {
-        JInvocation sub = initBlock.invoke("unsubscribe");
-        sub.arg(JExpr.ref(nameToString(node.getHandlerId())));
-        sub.arg(JExpr.ref(nameToString(node.getPortId())));
-    }
-
-    @Override
     public void caseARequiresPortFieldDeclaration(ARequiresPortFieldDeclaration node) {
         String portId = node.getIdentifier().getText();
         TypeAdapter ta = new TypeAdapter(context);
@@ -125,7 +86,7 @@ class ComponentBodyAdapter extends ClassBodyAdapter {
         JInvocation inv = JExpr.invoke("requires");
         inv.arg(JExpr.dotclass((JClass) ta.type));
         JFieldVar portField = clazz.field(JMod.PROTECTED | JMod.FINAL, specificType, portId, inv);
-        context.addField(portId, portField, ResolutionContext.FieldType.POSITIVE_PORT);
+        context.addField(portId, portField, Field.Type.POSITIVE_PORT);
     }
 
     @Override
@@ -133,11 +94,14 @@ class ComponentBodyAdapter extends ClassBodyAdapter {
         String portId = node.getIdentifier().getText();
         TypeAdapter ta = new TypeAdapter(context);
         node.getClassType().apply(ta);
+        if (ta.type == null) {
+            Logger.error(context.getFile(), node.getIdentifier(), "Couldn't resolve type for port!");
+        }
         JClass specificType = negPortType.narrow(ta.type);
         JInvocation inv = JExpr.invoke("provides");
         inv.arg(JExpr.dotclass((JClass) ta.type));
         JFieldVar portField = clazz.field(JMod.PROTECTED | JMod.FINAL, specificType, portId, inv);
-        context.addField(portId, portField, ResolutionContext.FieldType.NEGATIVE_PORT);
+        context.addField(portId, portField, Field.Type.NEGATIVE_PORT);
     }
 
     @Override
@@ -157,115 +121,121 @@ class ComponentBodyAdapter extends ClassBodyAdapter {
             } else if (ac.args.size() == 1) { // assume it's an Init
                 inv.arg(ac.args.get(0));
             } else {
-                try {
-                    // autowire
-                    JClass initT = context.resolveType(ta.type.fullName() + ".AutowireInit" + ac.args.size());
-                    JInvocation initInv = JExpr._new(initT);
-                    for (JExpression arg : ac.args) {
-                        initInv.arg(arg);
-                    }
-                    inv.arg(initInv);
-                } catch (ClassNotFoundException ex) {
-                    Logger.error(node.getIdentifier(), "Couldn't find autowire Init of length "
-                            + ac.args.size()
-                            + " for component type "
-                            + ta.type.fullName());
-                    return;
+                // autowire
+                JClass initT = ((JClass) ta.type).inner("AutowireInit" + ac.args.size());
+                JInvocation initInv = JExpr._new(initT);
+                for (JExpression arg : ac.args) {
+                    initInv.arg(arg);
                 }
+                inv.arg(initInv);
             }
             field = clazz.field(JMod.PROTECTED | JMod.FINAL, componentType, childId, inv);
         } else {
             field = clazz.field(JMod.PROTECTED, componentType, childId);
         }
-        context.addField(childId, field, ResolutionContext.FieldType.COMPONENT);
+        context.addField(childId, field, Field.Type.COMPONENT);
     }
 
     @Override
-    public void caseAConnectStatement(AConnectStatement node) {
+    public void inAHandlingComponentBodyDeclaration(AHandlingComponentBodyDeclaration node) {
+        KolaStatementAdapter ksa = new KolaStatementAdapter(context, new JBlockParent(initBlock, context));
+        node.apply(ksa);
+    }
+
+    @Override
+    public void caseAHandleDeclaration(AHandleDeclaration node) {
+        String handlerId = node.getHandlerId().getText();
+        String portId = node.getPortId().getText();
+        String eventId = node.getEventId().getText();
         TypeAdapter ta = new TypeAdapter(context);
         node.getClassType().apply(ta);
-        // Provider
-        String providerS = nameToString(node.getProvidedId());
-        Optional<FieldObject> providerFOO = context.findField(providerS);
-        JExpression provider;
-        if (providerFOO.isPresent()) {
-            FieldObject providerFO = providerFOO.get();
-            switch (providerFO.type) {
-                case POSITIVE_PORT:
-                    provider = JExpr.ref(JExpr._this(), providerFO.var);
-                    break;
-                case NEGATIVE_PORT:
-                    provider = JExpr.ref(JExpr._this(), providerFO.var).invoke("getPair");
-                    break;
-                case HANDLER:
-                    Logger.error(node.getProvidedId(), "Handler reference not allowed here!");
-                    return;
-                default:
-                    JInvocation providerPort = providerFO.var.invoke("getPositive");
-                    providerPort.arg(JExpr.dotclass((JClass) ta.type));
-                    provider = providerPort;
-            }
-        } else {
-            JExpression providerC = JExpr.direct(providerS);
-            JInvocation providerPort = providerC.invoke("getPositive");
-            providerPort.arg(JExpr.dotclass((JClass) ta.type));
-            provider = providerPort;
-        }
-        // Client
-        String clientS = nameToString(node.getRequiredId());
-        Optional<FieldObject> clientFOO = context.findField(clientS);
-        JExpression client;
-        if (clientFOO.isPresent()) {
-            FieldObject clientFO = clientFOO.get();
-            switch (clientFO.type) {
-                case POSITIVE_PORT:
-                    client = JExpr.ref(JExpr._this(), clientFO.var).invoke("getPair");
-                    break;
-                case NEGATIVE_PORT:
-                    client = JExpr.ref(JExpr._this(), clientFO.var);
-                    break;
-                case HANDLER:
-                    Logger.error(node.getRequiredId(), "Handler reference not allowed here!");
-                    return;
-                default:
-                    JInvocation clientPort = clientFO.var.invoke("getNegative");
-                    clientPort.arg(JExpr.dotclass((JClass) ta.type));
-                    client = clientPort;
-            }
-        } else {
-            JExpression clientC = JExpr.direct(clientS);
-            JInvocation clientPort = clientC.invoke("getNegative");
-            clientPort.arg(JExpr.dotclass((JClass) ta.type));
-            client = clientPort;
-        }
+        JFieldRef handlerField = createHandler(node.getHandlerId(), ta.type, eventId, node.getBlock());
+        JInvocation sub = initBlock.invoke("subscribe");
+        sub.arg(handlerField);
+        sub.arg(JExpr.ref(portId));
+    }
 
-        JInvocation inv = initBlock.invoke("connect");
-        inv.arg(provider);
-        inv.arg(client);
+    @Override
+    public void caseAHandlerDeclaration(AHandlerDeclaration node) {
+        String handlerId = node.getHandlerId().getText();
+        String eventId = node.getEventId().getText();
+        TypeAdapter ta = new TypeAdapter(context);
+        node.getClassType().apply(ta);
+        JFieldRef handlerField = createHandler(node.getHandlerId(), ta.type, eventId, node.getBlock());
     }
 
     @Override
     public void caseAInitDeclaration(AInitDeclaration node) {
-        MethodModifierAdapter modap = new MethodModifierAdapter();
+        MethodModifierAdapter modap = new MethodModifierAdapter(context);
         for (PModifier m : node.getModifier()) {
             m.apply(modap);
         }
         int mods = modap.getMods();
 
-        JMethod method = clazz.constructor(mods);
-        ConstructorDeclaratorAdapter da = new ConstructorDeclaratorAdapter(method);
-        TypeDeclarationAdapter.FormalParameterAdapter fpa = new TypeDeclarationAdapter.FormalParameterAdapter(context);
-        node.getHeaderFields().apply(fpa);
-        if (!fpa.params.isEmpty()) {
+        JMethod method = context.constructor(mods);
+        TypeDeclarationAdapter.FormalParameterAdapter fpa;
+        boolean generateAutowire = false;
+        try {
+            ConstructorDeclaratorAdapter da = new ConstructorDeclaratorAdapter(method);
+            fpa = new TypeDeclarationAdapter.FormalParameterAdapter(context);
+            node.getHeaderFields().apply(fpa);
+
+            for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
+                fp.apply(method, context);
+            }
+
+            generateAutowire = !fpa.params.isEmpty();
+
+            for (PModifier m : node.getModifier()) {
+                AnnotationAdapter annap = new AnnotationAdapter(new MethodAnnotatable(method), context);
+                m.apply(annap);
+            }
+            context.pushStatementScope();
             try {
-                JDefinedClass autowireInit = clazz._class(JMod.STATIC | JMod.PUBLIC, "AutowireInit"+fpa.params.size(), ClassType.CLASS);
+//                if (generateAutowire) {
+//                    for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
+//                        fp.apply(method);
+//                        method.body().assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
+//                    }
+//                }
+                ConstructorBodyAdapter cba = new ConstructorBodyAdapter(context, method.body());
+                node.getConstructorBody().apply(cba);
+            } finally {
+                context.popScope();
+            }
+        } finally {
+            context.popScope();
+        }
+
+        if (generateAutowire) {
+//            // Add fields to the class
+//            for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
+//                int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
+//                JVar field = clazz.field(fmods, fp.typeWithDim(), fp.id);
+//                context.addField(fp.id, field, Field.Type.NORMAL);
+//            }
+            // Add the AutowireInit class
+            JDefinedClass autowireInit = context.declare(JMod.STATIC | JMod.PUBLIC, fpa.params.get(0).identifier, ClassType.CLASS, Optional.of("AutowireInit" + fpa.params.size()));
+            try {
                 JClass specificInitType = initType.narrow(clazz);
                 autowireInit._extends(specificInitType);
-                JMethod initConstr = autowireInit.constructor(JMod.PUBLIC);
-                JBlock constrBody = initConstr.body();
-                JMethod autowireConstr = clazz.constructor(JMod.PUBLIC);
-                autowireConstr.param(JMod.FINAL, autowireInit, "autowireInit");
-                JInvocation autowireInv = autowireConstr.body().invoke("this");
+                JMethod initConstr = context.constructor(JMod.PUBLIC);
+                try {
+                    context.pushStatementScope();
+                    try {
+                        JBlock constrBody = initConstr.body();
+                        for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
+                            int fmods = fp.mods == 0 ? JMod.FINAL : fp.mods;
+                            constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
+                            fp.apply(initConstr, context);
+                        }
+                    } finally {
+                        context.popScope();
+                    }
+                } finally {
+                    context.popScope(); // initConstr;
+                }
+
                 if (fpa.params.size() == 1) {
                     Logger.error("Lacking type information for single value autowire Init at the moment. \n"
                             + "AutowireInit1 will be generated but it has to be called manually when creating the component.\n"
@@ -274,42 +244,59 @@ class ComponentBodyAdapter extends ClassBodyAdapter {
                 for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
                     int fmods = fp.mods == 0 ? (JMod.PUBLIC | JMod.FINAL) : fp.mods;
                     JFieldVar v = autowireInit.field(fmods, fp.typeWithDim(), fp.id);
-                    if (v.mods().is(JMod.FINAL)) { // variables can only be either final or not
-                        fp.mods = JMod.FINAL;
-                    } else {
-                        fp.mods = 0;
-                    }
-                    fp.apply(initConstr);
-                    fp.apply(method);
-                    autowireInv.arg(JExpr.ref("autowireInit").ref(fp.id));
-                    constrBody.assign(JExpr.refthis(fp.id), JExpr.ref(fp.id));
+
                 }
-            } catch (JClassAlreadyExistsException ex) {
-                Logger.error("Can't define autowire init of size " + fpa.params.size() + " since it already exists!");
-                return;
+            } finally {
+                context.popScope();
+            }
+
+            JMethod autowireConstr = context.constructor(JMod.PUBLIC);
+            try {
+                JVar acparam = autowireConstr.param(JMod.FINAL, autowireInit, "autowireInit");
+                context.addField("autowireInit", acparam, Field.Type.NORMAL);
+                JInvocation autowireInv = autowireConstr.body().invoke("this");
+                for (TypeDeclarationAdapter.FormalParameter fp : fpa.params) {
+                    autowireInv.arg(JExpr.ref("autowireInit").ref(fp.id));
+                }
+            } finally {
+                context.popScope();
             }
         }
-        for (PModifier m : node.getModifier()) {
-            AnnotationAdapter annap = new AnnotationAdapter(new MethodAnnotatable(method), context);
-            m.apply(annap);
-        }
-        ConstructorBodyAdapter cba = new ConstructorBodyAdapter(context, method.body());
-        node.getConstructorBody().apply(cba);
     }
 
-    private JFieldRef createHandler(String handlerId, JType eventType, String eventId, PBlock block) {
-        JMethod handlerMethod = clazz.method(JMod.PRIVATE | JMod.FINAL, context.unit.VOID, handlerId + "Method");
-        handlerMethod.param(eventType, eventId);
-        BlockStatementAdapter bsa = new BlockStatementAdapter(context, handlerMethod.body());
-        block.apply(bsa);
+    private JFieldRef createHandler(TIdentifier handlerIdentifier, JType eventType, String eventId, PBlock block) {
+        String handlerId = handlerIdentifier.getText();
+        JMethod handlerMethod = context.method(JMod.PRIVATE | JMod.FINAL, handlerIdentifier, context.unit.VOID, Optional.of(handlerId + "Method"));
+        try {
+            JVar eVar = handlerMethod.param(eventType, eventId);
+            context.addField(eventId, eVar, Field.Type.NORMAL);
+            context.pushStatementScope();
+            try {
+                BlockStatementAdapter bsa = new BlockStatementAdapter(context, handlerMethod.body());
+                block.apply(bsa);
+            } finally {
+                context.popScope();
+            }
+        } finally {
+            context.popScope();
+        }
         JClass specificHType = handlerType.narrow(eventType);
-        JDefinedClass anonHandler = context.unit.anonymousClass(specificHType);
-        JMethod anonMethod = anonHandler.method(JMod.PUBLIC, context.unit.VOID, "handle");
-        anonMethod.param(eventType, eventId);
-        JInvocation handlerMethodInv = anonMethod.body().invoke(handlerMethod);
-        handlerMethodInv.arg(JExpr.ref(eventId));
+        JDefinedClass anonHandler = context.anonymousClass(specificHType);
+        try {
+            JMethod anonMethod = context.method(JMod.PUBLIC, handlerIdentifier, context.unit.VOID, Optional.of("handle"));
+            try {
+                JVar amp = anonMethod.param(eventType, eventId);
+                context.addField(eventId, amp, Field.Type.NORMAL);
+                JInvocation handlerMethodInv = anonMethod.body().invoke(handlerMethod);
+                handlerMethodInv.arg(JExpr.ref(eventId));
+            } finally {
+                context.popScope();
+            }
+        } finally {
+            context.popScope();
+        }
         JFieldVar handlerField = clazz.field(JMod.PROTECTED | JMod.FINAL, specificHType, handlerId, JExpr._new(anonHandler));
-        context.addField(handlerId, handlerField, ResolutionContext.FieldType.HANDLER);
+        context.addField(handlerId, handlerField, Field.Type.HANDLER);
         return JExpr.ref(handlerId);
     }
 

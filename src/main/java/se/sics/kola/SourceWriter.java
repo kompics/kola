@@ -20,9 +20,9 @@
  */
 package se.sics.kola;
 
+import com.sun.codemodel.JCodeModel;
 import java.io.File;
 import java.io.IOException;
-import se.sics.kola.sourcegen.JavaSourceGenerator;
 
 /**
  *
@@ -40,7 +40,7 @@ public class SourceWriter {
         this(".");
     }
 
-    public void writeOut(File sourceFile, JavaSourceGenerator jsg) throws IOException {
-        jsg.getUnit().build(targetPath);
+    public void writeOut(JCodeModel model) throws IOException {
+        model.build(targetPath);
     }
 }

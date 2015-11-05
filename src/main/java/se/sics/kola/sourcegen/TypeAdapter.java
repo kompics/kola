@@ -23,7 +23,6 @@ package se.sics.kola.sourcegen;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JType;
 import java.util.LinkedList;
-import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ABooleanPrimitiveType;
 import se.sics.kola.node.AByteIntegralType;
@@ -45,7 +44,6 @@ import se.sics.kola.node.AShortIntegralType;
 import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.PTypeArguments;
 import se.sics.kola.sourcegen.Util.IdWithOptArgs;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -64,37 +62,37 @@ class TypeAdapter extends DepthFirstAdapter {
     public void caseABooleanPrimitiveType(ABooleanPrimitiveType node) {
         type = context.unit.BOOLEAN;
     }
-    
+
     @Override
     public void caseAByteIntegralType(AByteIntegralType node) {
         type = context.unit.BYTE;
     }
-    
+
     @Override
     public void caseAShortIntegralType(AShortIntegralType node) {
         type = context.unit.SHORT;
     }
-    
+
     @Override
     public void caseAIntIntegralType(AIntIntegralType node) {
         type = context.unit.INT;
     }
-    
+
     @Override
     public void caseALongIntegralType(ALongIntegralType node) {
         type = context.unit.LONG;
     }
-    
+
     @Override
     public void caseACharIntegralType(ACharIntegralType node) {
         type = context.unit.CHAR;
     }
-    
+
     @Override
     public void caseAFloatFloatingPointType(AFloatFloatingPointType node) {
         type = context.unit.FLOAT;
     }
-    
+
     @Override
     public void caseADoubleFloatingPointType(ADoubleFloatingPointType node) {
         type = context.unit.DOUBLE;
@@ -102,12 +100,9 @@ class TypeAdapter extends DepthFirstAdapter {
 
     @Override
     public void caseAClassOrInterfaceTypeNoArguments(AClassOrInterfaceTypeNoArguments node) {
-        String name = nameToString(node.getName());
-        try {
-            type = context.resolveType(name);
-        } catch (ClassNotFoundException ex) {
-            Logger.error("Couldn't find primitive type: " + name);
-        }
+
+        type = context.resolveType(node.getName());
+
     }
 
     @Override
@@ -116,12 +111,8 @@ class TypeAdapter extends DepthFirstAdapter {
         AName firstName = (AName) spec.getName();
         PTypeArguments lastArgsMaybe = node.getTypeArguments();
         JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        ctype = context.resolveType(firstName);
+
         LinkedList<IdWithOptArgs> list = Util.shiftTDS(spec, context);
         IdWithOptArgs lastIwoa = list.getLast();
         if (lastIwoa != null) {
@@ -137,12 +128,9 @@ class TypeAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -151,19 +139,14 @@ class TypeAdapter extends DepthFirstAdapter {
         }
         type = ctype;
     }
-    
+
     @Override
     public void caseAInterfaceType(AInterfaceType node) {
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
         AName firstName = (AName) spec.getName();
         PTypeArguments lastArgsMaybe = node.getTypeArguments();
-        JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        JClass ctype = context.resolveType(firstName);
+
         LinkedList<IdWithOptArgs> list = Util.shiftTDS(spec, context);
         IdWithOptArgs lastIwoa = list.getLast();
         if (lastIwoa != null) {
@@ -179,12 +162,9 @@ class TypeAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -193,19 +173,14 @@ class TypeAdapter extends DepthFirstAdapter {
         }
         type = ctype;
     }
-    
+
     @Override
     public void caseAClassType(AClassType node) {
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
         AName firstName = (AName) spec.getName();
         PTypeArguments lastArgsMaybe = node.getTypeArguments();
-        JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        JClass ctype = context.resolveType(firstName);
+
         LinkedList<IdWithOptArgs> list = Util.shiftTDS(spec, context);
         IdWithOptArgs lastIwoa = list.getLast();
         if (lastIwoa != null) {
@@ -221,12 +196,9 @@ class TypeAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);

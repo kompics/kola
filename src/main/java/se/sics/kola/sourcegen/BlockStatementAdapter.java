@@ -20,13 +20,7 @@
  */
 package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JBlock;
-import com.sun.codemodel.JClassAlreadyExistsException;
-import com.sun.codemodel.JDefinedClass;
-import com.sun.codemodel.JExpression;
-import com.sun.codemodel.JType;
-import com.sun.codemodel.JVar;
 import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AClassBlockStatement;
@@ -44,35 +38,30 @@ public class BlockStatementAdapter extends DepthFirstAdapter {
 
     protected final ResolutionContext context;
     protected final JBlock block;
+    private final JBlockParent blockParent;
 
     BlockStatementAdapter(ResolutionContext context, JBlock block) {
         this.context = context;
         this.block = block;
+        blockParent = new JBlockParent(block, context);
     }
 
     @Override
     public void caseAStatementBlockStatement(AStatementBlockStatement node) {
-        StatementAdapter sa = new StatementAdapter(new JBlockParent(block), context);
+        StatementAdapter sa = new StatementAdapter(blockParent, context);
         node.getStatement().apply(sa);
     }
 
     @Override
     public void caseAVariableBlockStatement(AVariableBlockStatement node) {
         ALocalVariableDeclaration decl = (ALocalVariableDeclaration) node.getLocalVariableDeclaration();
-        final FieldModifierAdapter fma = new FieldModifierAdapter();
+        final FieldModifierAdapter fma = new FieldModifierAdapter(context);
         for (PModifier mod : decl.getModifier()) {
             mod.apply(fma);
         }
         final TypeAdapter ta = new TypeAdapter(context);
         decl.getType().apply(ta);
-        VarDeclAdapter vda = new VarDeclAdapter(ta.type, context, new VarDeclAdapter.Scope() {
-
-            @Override
-            public JVar declare(JType type, String name, JExpression init) {
-                return block.decl(fma.getMods(), type, name, init);
-            }
-
-        });
+        VarDeclAdapter vda = new VarDeclAdapter(fma.getMods(), ta.type, context, blockParent);
         for (PVariableDeclarator declor : decl.getVariableDeclarator()) {
             declor.apply(vda);
         }
@@ -80,14 +69,8 @@ public class BlockStatementAdapter extends DepthFirstAdapter {
 
     @Override
     public void caseAClassBlockStatement(AClassBlockStatement node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, new TypeDeclarationAdapter.TypeParent() {
-
-            @Override
-            public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
-                Logger.error("CodeModel does not support local class declaration in blocks, yet.");
-                return null;
-            }
-        });
+        Logger.error("JCodeModel doesn't support block class declarations, yet. Your class will be created in the block's parent class instead.");
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
 }

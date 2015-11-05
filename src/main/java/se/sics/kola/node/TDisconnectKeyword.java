@@ -9,12 +9,12 @@ public final class TDisconnectKeyword extends Token
 {
     public TDisconnectKeyword()
     {
-        super.setText("disconnect");
+        super.setText("!disconnect");
     }
 
     public TDisconnectKeyword(int line, int pos)
     {
-        super.setText("disconnect");
+        super.setText("!disconnect");
         setLine(line);
         setPos(pos);
     }

@@ -267,18 +267,18 @@ Tokens
   port_keyword = 'port';
   component_keyword = 'component';
   componentdef_keyword = 'componentdef';
-  subscribe_keyword = 'subscribe';
-  unsubscribe_keyword = 'unsubscribe';
-  connect_keyword = 'connect';
-  disconnect_keyword = 'disconnect';
+  subscribe_keyword = '!subscribe';
+  unsubscribe_keyword = '!unsubscribe';
+  connect_keyword = '!connect';
+  disconnect_keyword = '!disconnect';
   init_keyword = 'init';
-  trigger_keyword = 'trigger';
+  trigger_keyword = '!trigger';
   requires_keyword = 'requires';
   provides_keyword = 'provides';
   indication_keyword = 'indication';
   request_keyword = 'request';
   event_keyword = 'event';
-  r_arrow = '->';
+  r_arrow = '=>';
 
   // 3.10
 
@@ -1895,13 +1895,8 @@ Productions
   // Kola Stuff
 
   kola_keyword = 
-    {subscribe} subscribe_keyword | 
-    {unsubscribe} unsubscribe_keyword | 
-    {connect} connect_keyword | 
-    {disconnect} disconnect_keyword |
     {requires} requires_keyword |
     {provides} provides_keyword |
-    {trigger} trigger_keyword |
     {event} event_keyword;
 
   port_declaration {-> port_declaration} = 
@@ -1998,22 +1993,35 @@ Productions
     handler_keyword [handler_id]:identifier colon class_type [event_id]:identifier block{-> New handler_declaration(handler_id, class_type, event_id, block)};
 
   connect_statement {-> connect_statement} =
-    connect_keyword [provided_id]:name r_arrow [required_id]:name colon class_type semi {-> New connect_statement(provided_id, required_id, class_type)};
+    {name_name} connect_keyword [provided_id]:name r_arrow [required_id]:name colon class_type semi {-> New connect_statement(New expression.name(provided_id.name), New expression.name(required_id.name), class_type)} |
+    {name_expression} connect_keyword [provided_id]:name r_arrow [required_id]:expression_no_name colon class_type semi {-> New connect_statement(New expression.name(provided_id.name), New expression.expression(required_id.expression_no_name), class_type)} |
+    {expression_name} connect_keyword [provided_id]:expression_no_name r_arrow [required_id]:name colon class_type semi {-> New connect_statement(New expression.expression(provided_id.expression_no_name), New expression.name(required_id.name), class_type)} |
+    {expression_expression} connect_keyword [provided_id]:expression_no_name r_arrow [required_id]:expression_no_name colon class_type semi {-> New connect_statement(New expression.expression(provided_id.expression_no_name), New expression.expression(required_id.expression_no_name), class_type)};
 
   subscribe_statement {-> subscribe_statement} = 
-    subscribe_keyword [handler_id]:name r_arrow [port_id]:name semi {-> New subscribe_statement(handler_id, port_id)};
+    {name_name} subscribe_keyword [handler_id]:name r_arrow [port_id]:name semi {-> New subscribe_statement(New expression.name(handler_id.name), New expression.name(port_id.name))} |
+    {name_expression} subscribe_keyword [handler_id]:name r_arrow [port_id]:expression_no_name semi {-> New subscribe_statement(New expression.name(handler_id.name), New expression.expression(port_id.expression_no_name))} |
+    {expression_name} subscribe_keyword [handler_id]:expression_no_name r_arrow [port_id]:name semi {-> New subscribe_statement(New expression.expression(handler_id.expression_no_name), New expression.name(port_id.name))} |
+    {expression_expression} subscribe_keyword [handler_id]:expression_no_name r_arrow [port_id]:expression_no_name semi {-> New subscribe_statement(New expression.expression(handler_id.expression_no_name), New expression.expression(port_id.expression_no_name))};
+
 
   disconnect_statement {-> disconnect_statement} = 
-    disconnect_keyword [provided_id]:name r_arrow [required_id]:name colon class_type semi {-> New disconnect_statement(provided_id, required_id, class_type)};
+    {name_name} disconnect_keyword [provided_id]:name r_arrow [required_id]:name colon class_type semi {-> New disconnect_statement(New expression.name(provided_id.name), New expression.name(required_id.name), class_type)} |
+    {name_expression} disconnect_keyword [provided_id]:name r_arrow [required_id]:expression_no_name colon class_type semi {-> New disconnect_statement(New expression.name(provided_id.name), New expression.expression(required_id.expression_no_name), class_type)} |
+    {expression_name} disconnect_keyword [provided_id]:expression_no_name r_arrow [required_id]:name colon class_type semi {-> New disconnect_statement(New expression.expression(provided_id.expression_no_name), New expression.name(required_id.name), class_type)} |
+    {expression_expression} disconnect_keyword [provided_id]:expression_no_name r_arrow [required_id]:expression_no_name colon class_type semi {-> New disconnect_statement(New expression.expression(provided_id.expression_no_name), New expression.expression(required_id.expression_no_name), class_type)};
 
   unsubscribe_statement {-> unsubscribe_statement} = 
-    unsubscribe_keyword [handler_id]:name r_arrow [port_id]:name semi {-> New unsubscribe_statement(handler_id, port_id)};
+    {name_name} unsubscribe_keyword [handler_id]:name r_arrow [port_id]:name semi {-> New unsubscribe_statement(New expression.name(handler_id.name), New expression.name(port_id.name))} |
+    {name_expression} unsubscribe_keyword [handler_id]:name r_arrow [port_id]:expression_no_name semi {-> New unsubscribe_statement(New expression.name(handler_id.name), New expression.expression(port_id.expression_no_name))} |
+    {expression_name} unsubscribe_keyword [handler_id]:expression_no_name r_arrow [port_id]:name semi {-> New unsubscribe_statement(New expression.expression(handler_id.expression_no_name), New expression.name(port_id.name))} |
+    {expression_expression} unsubscribe_keyword [handler_id]:expression_no_name r_arrow [port_id]:expression_no_name semi {-> New unsubscribe_statement(New expression.expression(handler_id.expression_no_name), New expression.expression(port_id.expression_no_name))};
 
   trigger_statement {-> trigger_statement} =
     {name_name} trigger_keyword [event]:name r_arrow [port]:name semi {-> New trigger_statement(New expression.name(event.name), New expression.name(port.name))} |
-    {expression_name} trigger_keyword l_brc [event]:primary_no_new_array r_brc r_arrow [port]:name semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.name(port.name))} |
+    {expression_name} trigger_keyword [event]:primary_no_new_array r_arrow [port]:name semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.name(port.name))} |
     {name_expression} trigger_keyword [event]:name r_arrow [port]:primary_no_new_array semi {-> New trigger_statement(New expression.name(event.name), New expression.expression(port.expression_no_name))} |
-    {expression_expression} trigger_keyword l_brc [event]:primary_no_new_array r_brc r_arrow [port]:primary_no_new_array semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.expression(port.expression_no_name))};
+    {expression_expression} trigger_keyword [event]:primary_no_new_array r_arrow [port]:primary_no_new_array semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.expression(port.expression_no_name))};
     //{method_name_name} trigger_keyword l_par [event]:name comma [port]:name r_par semi {-> New trigger_statement(New expression.name(event.name), New expression.name(port.name))} |
     //{method_expression_name} trigger_keyword l_par [event]:expression_no_name comma [port]:name r_par semi {-> New trigger_statement(New expression.expression(event.expression_no_name), New expression.name(port.name))} |
     //{method_name_expression} trigger_keyword l_par [event]:name comma [port]:expression_no_name r_par semi {-> New trigger_statement(New expression.name(event.name), New expression.expression(port.expression_no_name))} |
@@ -2106,13 +2114,8 @@ type_bound = interface_type+;
 // Kola
 
 kola_keyword = 
-    {subscribe} subscribe_keyword | 
-    {unsubscribe} unsubscribe_keyword | 
-    {connect} connect_keyword | 
-    {disconnect} disconnect_keyword |
     {requires} requires_keyword |
     {provides} provides_keyword |
-    {trigger} trigger_keyword |
     {event} event_keyword;
 
 port_declaration = 
@@ -2468,13 +2471,13 @@ resource_specification = resource+;
 
 resource = modifier* type variable_declarator_id expression;
 
-connect_statement = [provided_id]:name [required_id]:name class_type;
+connect_statement = [provided_id]:expression [required_id]:expression class_type;
 
-subscribe_statement = [handler_id]:name [port_id]:name;
+subscribe_statement = [handler_id]:expression [port_id]:expression;
 
-disconnect_statement = [provided_id]:name [required_id]:name class_type;
+disconnect_statement = [provided_id]:expression [required_id]:expression class_type;
 
-unsubscribe_statement = [handler_id]:name [port_id]:name;
+unsubscribe_statement = [handler_id]:expression [port_id]:expression;
 
 trigger_statement = [event]:expression [port]:expression;
 

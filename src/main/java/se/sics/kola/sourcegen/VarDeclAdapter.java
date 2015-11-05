@@ -34,13 +34,15 @@ import se.sics.kola.node.AVariableDeclaratorId;
  */
 public class VarDeclAdapter extends DepthFirstAdapter {
     private final ResolutionContext context;
-    private final Scope scope;
+    private final VariableScope scope;
     private JType type;
+    private final int mods;
     
-    VarDeclAdapter(JType type, ResolutionContext context, Scope scope) {
+    VarDeclAdapter(int mods, JType type, ResolutionContext context, VariableScope scope) {
         this.context = context;
         this.scope = scope;
         this.type = type;
+        this.mods = mods;
     }
     
     @Override
@@ -50,7 +52,7 @@ public class VarDeclAdapter extends DepthFirstAdapter {
         for (int i = 0; i < declId.getDim().size(); i++) {
             type = type.array();
         }
-        scope.declare(type, name, null);
+        JVar v = scope.declare(mods, type, name, null);
     }
     
     @Override
@@ -62,10 +64,10 @@ public class VarDeclAdapter extends DepthFirstAdapter {
         }
         VarInitAdapter via = new VarInitAdapter(context);
         node.getVariableInitializer().apply(via);
-        scope.declare(type, name, via.expr);
+        scope.declare(mods, type, name, via.expr);
     }
     
-    public static interface Scope {
-        JVar declare(JType type, String name, JExpression init);
+    public static interface VariableScope {
+        JVar declare(int mods, JType type, String name, JExpression init);
     }
 }

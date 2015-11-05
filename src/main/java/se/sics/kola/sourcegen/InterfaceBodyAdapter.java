@@ -20,9 +20,7 @@
  */
 package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.ClassType;
 import com.sun.codemodel.JClass;
-import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JMethod;
@@ -44,22 +42,15 @@ import se.sics.kola.sourcegen.TypeDeclarationAdapter.FormalParameter;
 public class InterfaceBodyAdapter extends BodyAdapter {
 
     protected final JDefinedClass ifc;
-    protected final TypeDeclarationAdapter.TypeParent cparent = new TypeDeclarationAdapter.TypeParent() {
-
-        @Override
-        public JDefinedClass _class(int mods, String name, ClassType classTypeVal) throws JClassAlreadyExistsException {
-            return ifc._class(mods, name, classTypeVal);
-        }
-    };
 
     InterfaceBodyAdapter(ResolutionContext context, JDefinedClass ifc) {
         super(context);
         this.ifc = ifc;
     }
-    
+
     @Override
     public void caseAAbstractMethodDeclaration(AAbstractMethodDeclaration header) {
-        MethodModifierAdapter modap = new MethodModifierAdapter();
+        MethodModifierAdapter modap = new MethodModifierAdapter(context);
         for (PModifier m : header.getModifier()) {
             m.apply(modap);
         }
@@ -68,47 +59,44 @@ public class InterfaceBodyAdapter extends BodyAdapter {
         header.apply(ra);
         MethodDeclaratorAdapter da = new MethodDeclaratorAdapter();
         header.apply(da);
-        JMethod method = ifc.method(mods, ra.resultType, da.name);
-        for (PModifier m : header.getModifier()) {
-            AnnotationAdapter annap = new AnnotationAdapter(new MethodAnnotatable(method), context);
-            m.apply(annap);
-        }
-        for (PTypeParameter tparam : header.getTypeParameter()) {
-            TypeParameterAdapter tpa = new TypeParameterAdapter(context);
-            tparam.apply(tpa);
-            if (tpa.bounds.isEmpty()) {
-                method.generify(tpa.name);
-            } else {
-                for (JClass bound : tpa.bounds) {
-                    method.generify(tpa.name, bound);
+        JMethod method = context.method(mods, da.id, ra.resultType);
+        try {
+            for (PModifier m : header.getModifier()) {
+                AnnotationAdapter annap = new AnnotationAdapter(new MethodAnnotatable(method), context);
+                m.apply(annap);
+            }
+            for (PTypeParameter tparam : header.getTypeParameter()) {
+                TypeParameterAdapter tpa = new TypeParameterAdapter(context);
+                tparam.apply(tpa);
+                if (tpa.bounds.isEmpty()) {
+                    method.generify(tpa.name);
+                } else {
+                    for (JClass bound : tpa.bounds) {
+                        method.generify(tpa.name, bound);
+                    }
                 }
             }
-        }
-        for (FormalParameter param : da.params) {
-            param.apply(method);
-        }
-        if (header.getThrows() != null) {
-            ThrowsAdapter ta = new ThrowsAdapter(method);
-            header.getThrows().apply(ta);
+            for (FormalParameter param : da.params) {
+                param.apply(method, context);
+            }
+            if (header.getThrows() != null) {
+                ThrowsAdapter ta = new ThrowsAdapter(method);
+                header.getThrows().apply(ta);
+            }
+        } finally {
+            context.popScope();
         }
     }
 
     @Override
     public void caseAConstantDeclaration(AConstantDeclaration node) {
-        final FieldModifierAdapter fma = new FieldModifierAdapter();
+        final FieldModifierAdapter fma = new FieldModifierAdapter(context);
         for (PModifier mod : node.getModifier()) {
             mod.apply(fma);
         }
         final TypeAdapter ta = new TypeAdapter(context);
         node.getType().apply(ta);
-        VarDeclAdapter vda = new VarDeclAdapter(ta.type, context, new VarDeclAdapter.Scope() {
-
-            @Override
-            public JVar declare(JType type, String name, JExpression init) {
-                return ifc.field(fma.getMods(), type, name, init);
-            }
-
-        });
+        VarDeclAdapter vda = new VarDeclAdapter(fma.getMods(), ta.type, context, this);
         for (PVariableDeclarator decl : node.getVariableDeclarator()) {
             decl.apply(vda);
         }
@@ -116,13 +104,20 @@ public class InterfaceBodyAdapter extends BodyAdapter {
 
     @Override
     public void caseAClassInterfaceMemberDeclaration(AClassInterfaceMemberDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, cparent);
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
     }
 
     @Override
     public void caseAInterfaceInterfaceMemberDeclaration(AInterfaceInterfaceMemberDeclaration node) {
-        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context, cparent);
+        TypeDeclarationAdapter ca = new TypeDeclarationAdapter(context);
         node.apply(ca);
+    }
+
+    @Override
+    public JVar declare(int mods, JType type, String name, JExpression init) {
+        JVar var = ifc.field(mods, type, name, init);
+        context.addField(name, var, Field.Type.NORMAL);
+        return var;
     }
 }

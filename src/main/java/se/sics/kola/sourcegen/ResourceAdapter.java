@@ -21,6 +21,7 @@
 package se.sics.kola.sourcegen;
 
 import com.sun.codemodel.JTryBlock;
+import com.sun.codemodel.JVar;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AResource;
 import se.sics.kola.node.AVariableDeclaratorId;
@@ -42,7 +43,7 @@ public class ResourceAdapter extends DepthFirstAdapter {
 
     @Override
     public void caseAResource(AResource node) {
-        FieldModifierAdapter fma = new FieldModifierAdapter();
+        FieldModifierAdapter fma = new FieldModifierAdapter(context);
         node.apply(fma);
         int mods = fma.getMods();
         TypeAdapter ta = new TypeAdapter(context);
@@ -52,6 +53,7 @@ public class ResourceAdapter extends DepthFirstAdapter {
         String id = avdid.getIdentifier().getText();
         ExpressionAdapter ea = new ExpressionAdapter(new JExprParent(), context);
         node.apply(ea);
-        _try.resource(mods, ta.type, id, ea.expr);
+        JVar res = _try.resource(mods, ta.type, id, ea.expr);
+        context.addField(id, res, Field.Type.NORMAL);
     }
 }

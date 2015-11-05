@@ -59,13 +59,8 @@ public interface Analysis extends Switch
     void caseAAnnotationTypeDeclaration(AAnnotationTypeDeclaration node);
     void caseATypeParameter(ATypeParameter node);
     void caseATypeBound(ATypeBound node);
-    void caseASubscribeKolaKeyword(ASubscribeKolaKeyword node);
-    void caseAUnsubscribeKolaKeyword(AUnsubscribeKolaKeyword node);
-    void caseAConnectKolaKeyword(AConnectKolaKeyword node);
-    void caseADisconnectKolaKeyword(ADisconnectKolaKeyword node);
     void caseARequiresKolaKeyword(ARequiresKolaKeyword node);
     void caseAProvidesKolaKeyword(AProvidesKolaKeyword node);
-    void caseATriggerKolaKeyword(ATriggerKolaKeyword node);
     void caseAEventKolaKeyword(AEventKolaKeyword node);
     void caseAPortDeclaration(APortDeclaration node);
     void caseAEventDeclaration(AEventDeclaration node);

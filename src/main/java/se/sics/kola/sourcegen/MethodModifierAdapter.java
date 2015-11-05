@@ -43,8 +43,11 @@ import se.sics.kola.node.AVolatileModifier;
 class MethodModifierAdapter extends DepthFirstAdapter {
 
     private int mods = 0;
-
-    MethodModifierAdapter() {
+    private final ResolutionContext context;
+    
+    
+    MethodModifierAdapter(ResolutionContext context) {
+        this.context = context;
     }
 
     public int getMods() {
@@ -83,17 +86,17 @@ class MethodModifierAdapter extends DepthFirstAdapter {
 
     @Override
     public void inAStrictfpModifier(AStrictfpModifier node) {
-        Logger.error(node.getStrictfpKeyword(), "CodeModel does not support strictfp modifier. Ignoring...");
+        Logger.error(context.getFile(), node.getStrictfpKeyword(), "CodeModel does not support strictfp modifier. Ignoring...");
     }
 
     @Override
     public void inATransientModifier(ATransientModifier node) {
-        Logger.error(node.getTransientKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getTransientKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override
     public void inAVolatileModifier(AVolatileModifier node) {
-        Logger.error(node.getVolatileKeyword(), "Modifier not supported here. Ignoring...");
+        Logger.error(context.getFile(), node.getVolatileKeyword(), "Modifier not supported here. Ignoring...");
     }
 
     @Override

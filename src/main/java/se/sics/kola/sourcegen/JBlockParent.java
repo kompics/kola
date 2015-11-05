@@ -24,8 +24,10 @@ import com.sun.codemodel.JAssignmentTarget;
 import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JConditional;
 import com.sun.codemodel.JDoLoop;
+import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JExpressionStatement;
+import com.sun.codemodel.JField;
 import com.sun.codemodel.JForEach;
 import com.sun.codemodel.JForLoop;
 import com.sun.codemodel.JInvocation;
@@ -34,18 +36,22 @@ import com.sun.codemodel.JSwitch;
 import com.sun.codemodel.JSynchronized;
 import com.sun.codemodel.JTryBlock;
 import com.sun.codemodel.JType;
+import com.sun.codemodel.JVar;
 import com.sun.codemodel.JWhileLoop;
+import se.sics.kola.sourcegen.VarDeclAdapter.VariableScope;
 
 /**
  *
  * @author lkroll
  */
-class JBlockParent implements StatementAdapter.StatementParent {
+class JBlockParent implements StatementAdapter.StatementParent, VariableScope {
 
     private final JBlock block;
+    private final ResolutionContext context;
 
-    public JBlockParent(JBlock block) {
+    public JBlockParent(JBlock block, ResolutionContext context) {
         this.block = block;
+        this.context = context;
     }
 
     @Override
@@ -157,5 +163,17 @@ class JBlockParent implements StatementAdapter.StatementParent {
     @Override
     public void _throw(JExpression exp) {
         block._throw(exp);
+    }
+
+    @Override
+    public JVar declare(int mods, JType type, String name, JExpression init) {
+        JVar v = block.decl(mods, type, name, init);
+        context.addField(name, v, Field.Type.NORMAL);
+        return v;
+    }
+
+    @Override
+    public JField ref(String name) {
+        return JExpr.ref(name);
     }
 }

@@ -9,12 +9,12 @@ public final class TConnectKeyword extends Token
 {
     public TConnectKeyword()
     {
-        super.setText("connect");
+        super.setText("!connect");
     }
 
     public TConnectKeyword(int line, int pos)
     {
-        super.setText("connect");
+        super.setText("!connect");
         setLine(line);
         setPos(pos);
     }

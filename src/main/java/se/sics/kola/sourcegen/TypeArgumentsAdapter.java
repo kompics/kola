@@ -24,7 +24,6 @@ import com.sun.codemodel.JClass;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import se.sics.kola.Logger;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AGtTypeArguments;
 import se.sics.kola.node.AName;
@@ -33,21 +32,21 @@ import se.sics.kola.node.ATypeDeclSpecifier;
 import se.sics.kola.node.AUshrTypeArguments;
 import se.sics.kola.node.PTypeArgument;
 import se.sics.kola.sourcegen.Util.IdWithOptArgs;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
  * @author lkroll
  */
 class TypeArgumentsAdapter extends DepthFirstAdapter {
+
     private ResolutionContext context;
     //private JClass type;
     List<JClass> narrows = new ArrayList<JClass>();
-    
+
     TypeArgumentsAdapter(ResolutionContext context) {
         this.context = context;
     }
-    
+
     @Override
     public void caseAGtTypeArguments(AGtTypeArguments node) {
         for (PTypeArgument arg : node.getTypeArgument()) {
@@ -56,7 +55,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             narrows.add(taa.type);
         }
     }
-    
+
     @Override
     public void caseAShrTypeArguments(AShrTypeArguments node) {
         // TA1s
@@ -68,13 +67,8 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         // TypeDecSpec
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
         AName firstName = (AName) spec.getName();
-        JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        JClass ctype = context.resolveType(firstName);
+
         LinkedList<IdWithOptArgs> list = Util.shiftTDS(spec, context);
         IdWithOptArgs cur = list.pollFirst();
         while ((cur != null) && (cur.args == null)) {
@@ -86,12 +80,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -108,7 +99,7 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         ctype = ctype.narrow(narrows2);
         narrows.add(ctype);
     }
-    
+
     @Override
     public void caseAUshrTypeArguments(AUshrTypeArguments node) {
         // TA1s
@@ -121,12 +112,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         ATypeDeclSpecifier spec1 = (ATypeDeclSpecifier) node.getSpecifier1();
         AName firstName1 = (AName) spec1.getName();
         JClass ctype1, ctype2;
-        try {
-            ctype1 = context.resolveType(nameToString(firstName1));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName1.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+
+        ctype1 = context.resolveType(firstName1);
+
         LinkedList<IdWithOptArgs> list1 = Util.shiftTDS(spec1, context);
         IdWithOptArgs cur = list1.pollFirst();
         while ((cur != null) && (cur.args == null)) {
@@ -138,12 +126,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             ctype1 = ctype1.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list1) {
-            String cname = ctype1.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype1 = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype1 = ctype1.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -160,12 +145,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
         // Spec2
         ATypeDeclSpecifier spec2 = (ATypeDeclSpecifier) node.getSpecifier2();
         AName firstName2 = (AName) spec2.getName();
-        try {
-            ctype2 = context.resolveType(nameToString(firstName2));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName2.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+
+        ctype2 = context.resolveType(firstName2);
+
         LinkedList<IdWithOptArgs> list2 = Util.shiftTDS(spec2, context);
         cur = list2.pollFirst();
         while ((cur != null) && (cur.args == null)) {
@@ -177,12 +159,9 @@ class TypeArgumentsAdapter extends DepthFirstAdapter {
             ctype2 = ctype2.narrow(tpa.narrows);
         }
         for (IdWithOptArgs iwoa : list2) {
-            String cname = ctype2.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype2 = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+
+            ctype2 = ctype2.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);

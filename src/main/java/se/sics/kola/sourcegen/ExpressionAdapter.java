@@ -27,6 +27,7 @@ import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import com.sun.codemodel.JExpressionStatement;
+import com.sun.codemodel.JField;
 import com.sun.codemodel.JInvocation;
 import com.sun.codemodel.JOp;
 import com.sun.codemodel.JType;
@@ -95,6 +96,7 @@ import se.sics.kola.node.PArgument;
 import se.sics.kola.node.PDimExpr;
 import se.sics.kola.node.PVariableInitializer;
 import se.sics.kola.sourcegen.ArgumentAdapter.Argumentable;
+import se.sics.kola.sourcegen.ResolutionContext.AmbiguousExpressionMapper;
 import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
@@ -128,7 +130,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     @Override
     public void caseAMethodMethodInvocation(AMethodMethodInvocation node) {
         //String name = nameToString(node.getName());
-        JInvocation inv = context.resolveInvocation((AName) node.getName(), parent);
+        JInvocation inv = context.resolveInvocation(node.getName(), parent);
         Argumentable ia = new InvocationArgumentable(inv);
         expr = inv;
         for (PArgument arg : node.getArgument()) {
@@ -144,7 +146,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         JExpression lhs = ea.expr;
         JInvocation inv = parent.invoke(lhs, node.getIdentifier().getText());
         if (!node.getNonWildTypeArguments().isEmpty()) {
-            Logger.error(node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
+            Logger.error(context.getFile(), node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
         }
         Argumentable ia = new InvocationArgumentable(inv);
         for (PArgument arg : node.getArgument()) {
@@ -158,7 +160,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     public void caseASuperMethodInvocation(ASuperMethodInvocation node) {
         JInvocation inv = JExpr._super().invoke(node.getIdentifier().getText());
         if (!node.getNonWildTypeArguments().isEmpty()) {
-            Logger.error(node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
+            Logger.error(context.getFile(), node.getIdentifier(), "CodeModel does not support type arguments for methods, yet. Ignoring...");
         }
         Argumentable ia = new InvocationArgumentable(inv);
         for (PArgument arg : node.getArgument()) {
@@ -173,23 +175,19 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     public void caseAClassMethodInvocation(AClassMethodInvocation node) {
         AClassName acname = (AClassName) node.getClassName();
         String name = nameToString(acname.getName());
-        try {
-            JClass jc = context.resolveType(name);
-            JExpression jcs = JExpr.dotsuper(jc);
-            JInvocation inv = jcs.invoke(node.getIdentifier().getText());
-            Argumentable ia = new InvocationArgumentable(inv);
-            for (PArgument arg : node.getArgument()) {
-                ArgumentAdapter aa = new ArgumentAdapter(ia, context);
-                arg.apply(aa);
-            }
-            expr = inv;
-            parent.addInvocation(inv);
-        } catch (ClassNotFoundException ex) {
-            AName aname = (AName) acname.getName();
-            Logger.error(aname.getIdentifier().peekFirst(), "Could not find type: " + name);
+
+        JClass jc = context.resolveType(acname.getName());
+        JExpression jcs = JExpr.dotsuper(jc);
+        JInvocation inv = jcs.invoke(node.getIdentifier().getText());
+        Argumentable ia = new InvocationArgumentable(inv);
+        for (PArgument arg : node.getArgument()) {
+            ArgumentAdapter aa = new ArgumentAdapter(ia, context);
+            arg.apply(aa);
         }
+        expr = inv;
+        parent.addInvocation(inv);
     }
-    
+
     @Override
     public void caseAKolaMethodInvocation(AKolaMethodInvocation node) {
         JInvocation inv = parent.invoke(Util.kolaKWToString(node.getKolaKeyword()));
@@ -208,12 +206,8 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         ATypeDeclSpecifier spec = (ATypeDeclSpecifier) node.getTypeDeclSpecifier();
         AName firstName = (AName) spec.getName();
         JClass ctype;
-        try {
-            ctype = context.resolveType(nameToString(firstName));
-        } catch (ClassNotFoundException ex) {
-            Logger.error(firstName.getIdentifier().getLast(), "Could not resolve type!");
-            return;
-        }
+        ctype = context.resolveType(firstName);
+
         LinkedList<Util.IdWithOptArgs> list = Util.shiftTDS(spec, context);
         Util.IdWithOptArgs cur = list.pollFirst();
         while ((cur != null) && (cur.args == null)) {
@@ -225,12 +219,9 @@ public class ExpressionAdapter extends DepthFirstAdapter {
             ctype = ctype.narrow(tpa.narrows);
         }
         for (Util.IdWithOptArgs iwoa : list) {
-            String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
-            try {
-                ctype = context.resolveType(cname);
-            } catch (ClassNotFoundException ex) {
-                Logger.error("Couldn't resolve type: " + cname);
-            }
+            //String cname = ctype.fullName() + "." + iwoa.id.getText(); // losing the generics again here...I don't see any way around this
+            ctype = ctype.inner(iwoa.id.getText());
+
             if (iwoa.args != null) {
                 TypeArgumentsAdapter tpa = new TypeArgumentsAdapter(context);
                 iwoa.args.apply(tpa);
@@ -260,7 +251,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
             arg.apply(aa);
         }
     }
-    
+
     @Override
     public void caseAPrimaryClassInstanceCreationExpression(APrimaryClassInstanceCreationExpression node) {
         throw new UnsupportedOperationException("CodeModel doesn't suppport primary class instance creation, yet");
@@ -639,19 +630,53 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     ////////////////////////// Expression ///////////////////////////
     @Override
     public void caseANameExpression(ANameExpression node) {
-        //expr = context.resolveField((AName) node.getName());
-        expr = JExpr.direct(nameToString(node.getName()));
+        final AName aname = (AName) node.getName();
+        expr = context.resolveAmbiguous(node.getName(), new AmbiguousExpressionMapper(){
+
+            @Override
+            public JExpression map(JField f) {
+                return f;
+            }
+
+            @Override
+            public JExpression map(Field f) {
+                return f.var;
+            }
+
+            @Override
+            public JExpression map(JClass jc) {
+                Logger.warn(context.getFile(), aname,  "A Class name alone is not a expression. This doesn't seem right!");
+                return jc.dotclass();
+            }
+        });
     }
-    
+
     @Override
     public void caseAKolaExpressionNoName(AKolaExpressionNoName node) {
-        expr = JExpr.direct(nameToString(node.getName()) + "." + Util.kolaKWToString(node.getKolaKeyword()));
+        final String kolaKW = Util.kolaKWToString(node.getKolaKeyword());
+        expr = context.resolveAmbiguous(node.getName(), new AmbiguousExpressionMapper(){
+
+            @Override
+            public JExpression map(JField f) {
+                return f.ref(kolaKW);
+            }
+
+            @Override
+            public JExpression map(Field f) {
+                return f.var.ref(kolaKW);
+            }
+
+            @Override
+            public JExpression map(JClass jc) {
+                return jc.staticRef(kolaKW);
+            }
+        });
     }
 
     ////////////////////////// Literal ///////////////////////////
     @Override
     public void caseALiteralExpressionNoName(ALiteralExpressionNoName node) {
-        LiteralAdapter la = new LiteralAdapter();
+        LiteralAdapter la = new LiteralAdapter(context);
         node.getLiteral().apply(la);
         expr = la.expr;
     }
@@ -666,13 +691,9 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     public void caseAClassExpressionNoName(AClassExpressionNoName node) {
         AClassName acn = (AClassName) node.getClassName();
         AName aname = (AName) acn.getName();
-        String cname = nameToString(aname);
-        try {
-            JClass jc = context.resolveType(cname);
-            expr = JExpr.dotthis(jc);
-        } catch (ClassNotFoundException ex) {
-            Logger.error(aname.getIdentifier().getFirst(), "Could not resolve type: " + cname);
-        }
+
+        JClass jc = context.resolveType(acn.getName());
+        expr = JExpr.dotthis(jc);
     }
 
     @Override
@@ -696,14 +717,10 @@ public class ExpressionAdapter extends DepthFirstAdapter {
     @Override
     public void caseAClassFieldAccess(AClassFieldAccess node) {
         AClassName acn = (AClassName) node.getClassName();
-        AName aname = (AName) acn.getName();
-        String cname = nameToString(aname);
-        try {
-            JClass jc = context.resolveType(cname);
-            expr = jc.staticRef(node.getIdentifier().getText());
-        } catch (ClassNotFoundException ex) {
-            Logger.error(aname.getIdentifier().getFirst(), "Could not resolve type: " + cname);
-        }
+
+        JClass jc = context.resolveType(acn.getName());
+        expr = jc.staticRef(node.getIdentifier().getText());
+
     }
 
     @Override
@@ -747,6 +764,8 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         public void addStatement(JExpressionStatement stmt);
 
         public JExpressionStatement assign(JAssignmentTarget lhs, JExpression rhs);
+        
+        public JField ref(String name);
     }
 
     static class JExprParent implements ExpressionParent {
@@ -774,6 +793,11 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         @Override
         public void addStatement(JExpressionStatement stmt) {
             // ignore
+        }
+
+        @Override
+        public JField ref(String name) {
+            return JExpr.ref(name);
         }
 
     }

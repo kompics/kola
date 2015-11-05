@@ -20,7 +20,6 @@
  */
 package se.sics.kola.sourcegen;
 
-import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JExpression;
 import se.sics.kola.Logger;
 import se.sics.kola.PrintAdapter;
@@ -28,7 +27,6 @@ import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.AExpressionArgument;
 import se.sics.kola.node.ANameArgument;
 import se.sics.kola.sourcegen.ExpressionAdapter.JExprParent;
-import static se.sics.kola.sourcegen.Util.nameToString;
 
 /**
  *
@@ -46,9 +44,8 @@ public class ArgumentAdapter extends DepthFirstAdapter {
     
     @Override
     public void caseANameArgument(ANameArgument node) {
-        //JFieldRef field = context.resolveField((AName) node.getName());
-        //invocation.arg(field);
-        invocation.arg(JExpr.direct(nameToString(node.getName())));
+        Field f = context.resolveField(node.getName());
+        invocation.arg(f.var);
     }
     
     @Override

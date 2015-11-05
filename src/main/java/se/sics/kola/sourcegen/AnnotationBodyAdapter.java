@@ -38,7 +38,7 @@ class AnnotationBodyAdapter extends InterfaceBodyAdapter {
     
     @Override
     public void caseAAbstractAnnotationTypeElementDeclaration(AAbstractAnnotationTypeElementDeclaration header) {
-        MethodModifierAdapter modap = new MethodModifierAdapter();
+        MethodModifierAdapter modap = new MethodModifierAdapter(context);
         for (PModifier m : header.getModifier()) {
             m.apply(modap);
         }
@@ -52,7 +52,7 @@ class AnnotationBodyAdapter extends InterfaceBodyAdapter {
             m.apply(annap);
         }
         if (header.getDefaultValue() != null) {
-            Logger.error(header.getIdentifier(), "CodeModel doesn't support annotation default values, yet...");
+            Logger.error(context.getFile(), header.getIdentifier(), "CodeModel doesn't support annotation default values, yet...");
         }
     }
 

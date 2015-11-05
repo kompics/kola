@@ -7,8 +7,8 @@ import se.sics.kola.analysis.*;
 @SuppressWarnings("nls")
 public final class AConnectStatement extends PConnectStatement
 {
-    private PName _providedId_;
-    private PName _requiredId_;
+    private PExpression _providedId_;
+    private PExpression _requiredId_;
     private PClassType _classType_;
 
     public AConnectStatement()
@@ -17,8 +17,8 @@ public final class AConnectStatement extends PConnectStatement
     }
 
     public AConnectStatement(
-        @SuppressWarnings("hiding") PName _providedId_,
-        @SuppressWarnings("hiding") PName _requiredId_,
+        @SuppressWarnings("hiding") PExpression _providedId_,
+        @SuppressWarnings("hiding") PExpression _requiredId_,
         @SuppressWarnings("hiding") PClassType _classType_)
     {
         // Constructor
@@ -45,12 +45,12 @@ public final class AConnectStatement extends PConnectStatement
         ((Analysis) sw).caseAConnectStatement(this);
     }
 
-    public PName getProvidedId()
+    public PExpression getProvidedId()
     {
         return this._providedId_;
     }
 
-    public void setProvidedId(PName node)
+    public void setProvidedId(PExpression node)
     {
         if(this._providedId_ != null)
         {
@@ -70,12 +70,12 @@ public final class AConnectStatement extends PConnectStatement
         this._providedId_ = node;
     }
 
-    public PName getRequiredId()
+    public PExpression getRequiredId()
     {
         return this._requiredId_;
     }
 
-    public void setRequiredId(PName node)
+    public void setRequiredId(PExpression node)
     {
         if(this._requiredId_ != null)
         {
@@ -160,13 +160,13 @@ public final class AConnectStatement extends PConnectStatement
         // Replace child
         if(this._providedId_ == oldChild)
         {
-            setProvidedId((PName) newChild);
+            setProvidedId((PExpression) newChild);
             return;
         }
 
         if(this._requiredId_ == oldChild)
         {
-            setRequiredId((PName) newChild);
+            setRequiredId((PExpression) newChild);
             return;
         }
 
