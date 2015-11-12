@@ -73,7 +73,7 @@ class GlobalScope extends NamedScope {
         }
         // in the class path
         try {
-            Class c = ClassLoader.getSystemClassLoader().loadClass(qualifiedName);
+            Class c = Thread.currentThread().getContextClassLoader().loadClass(qualifiedName);
             return Optional.of(unit.ref(c));
         } catch (ClassNotFoundException ex) {
             // ignore
@@ -86,7 +86,7 @@ class GlobalScope extends NamedScope {
     public JClass resolveType(String shortName) {
         // global scope (no name package)
         try {
-            Class c = ClassLoader.getSystemClassLoader().loadClass(shortName);
+            Class c = Thread.currentThread().getContextClassLoader().loadClass(shortName);
             return unit.ref(c);
         } catch (ClassNotFoundException ex) {
             // ignore
@@ -94,7 +94,7 @@ class GlobalScope extends NamedScope {
         // perma in scope
         for (String packS : permaScopePackages) {
             try {
-                Class c = ClassLoader.getSystemClassLoader().loadClass(packS + "." + shortName);
+                Class c = Thread.currentThread().getContextClassLoader().loadClass(packS + "." + shortName);
                 return unit.ref(c);
             } catch (ClassNotFoundException ex) {
                 // ignore

@@ -25,6 +25,7 @@ import com.sun.codemodel.JClass;
 import com.sun.codemodel.JMultiCatchBlock;
 import com.sun.codemodel.JTryBlock;
 import com.sun.codemodel.JType;
+import com.sun.codemodel.JVar;
 import java.util.ArrayList;
 import se.sics.kola.analysis.DepthFirstAdapter;
 import se.sics.kola.node.ACatchClause;
@@ -37,42 +38,50 @@ import se.sics.kola.node.PClassType;
  * @author lkroll
  */
 class CatchClauseAdapter extends DepthFirstAdapter {
+
     private final ResolutionContext context;
     private final JTryBlock _try;
-    
+
     CatchClauseAdapter(JTryBlock _try, ResolutionContext context) {
         this._try = _try;
         this.context = context;
     }
-    
+
     @Override
     public void caseACatchClause(ACatchClause node) {
-        // Formal Parameter
-        ACatchFormalParameter paramNode = (ACatchFormalParameter) node.getCatchFormalParameter();
-        FieldModifierAdapter fma = new FieldModifierAdapter(context);
-        paramNode.apply(fma);
-        int mods = fma.getMods();
-        ArrayList<JType> catchTypes = new ArrayList<>();
-        for (PClassType pType : paramNode.getCatchTypes()) {
-            TypeAdapter ta = new TypeAdapter(context);
-            pType.apply(ta);
-            catchTypes.add(ta.type);
-        }
-        AVariableDeclaratorId avdid = (AVariableDeclaratorId) paramNode.getVariableDeclaratorId();
-        String id = avdid.getIdentifier().getText();
-        if (catchTypes.size() == 1) {
-            JCatchBlock cClause = _try._catch((JClass) catchTypes.get(0));
-            cClause.param(id);
-            BlockStatementAdapter bsa = new BlockStatementAdapter(context, cClause.body());
-            node.getBlock().apply(bsa);
-        } else {
-            JClass[] catchClasses = new JClass[catchTypes.size()];
-            for (int i = 0; i < catchTypes.size(); i++) {
-                catchClasses[i] = (JClass) catchTypes.get(i);
+        context.pushStatementScope(); // catch block
+        try {
+            // Formal Parameter
+            ACatchFormalParameter paramNode = (ACatchFormalParameter) node.getCatchFormalParameter();
+            FieldModifierAdapter fma = new FieldModifierAdapter(context);
+            paramNode.apply(fma);
+            int mods = fma.getMods();
+            ArrayList<JType> catchTypes = new ArrayList<>();
+            for (PClassType pType : paramNode.getCatchTypes()) {
+                TypeAdapter ta = new TypeAdapter(context);
+                pType.apply(ta);
+                catchTypes.add(ta.type);
             }
-            JMultiCatchBlock cClause = _try._catch(mods, id, catchClasses);
-            BlockStatementAdapter bsa = new BlockStatementAdapter(context, cClause.body());
-            node.getBlock().apply(bsa);
+            AVariableDeclaratorId avdid = (AVariableDeclaratorId) paramNode.getVariableDeclaratorId();
+            String id = avdid.getIdentifier().getText();
+            if (catchTypes.size() == 1) {
+                JCatchBlock cClause = _try._catch((JClass) catchTypes.get(0));
+                JVar var = cClause.param(id);
+                context.addField(id, var, Field.Type.NORMAL);
+                BlockStatementAdapter bsa = new BlockStatementAdapter(context, cClause.body());
+                node.getBlock().apply(bsa);
+            } else {
+                JClass[] catchClasses = new JClass[catchTypes.size()];
+                for (int i = 0; i < catchTypes.size(); i++) {
+                    catchClasses[i] = (JClass) catchTypes.get(i);
+                }
+                JMultiCatchBlock cClause = _try._catch(mods, id, catchClasses);
+                context.addField(id, cClause.getVar(), Field.Type.NORMAL);
+                BlockStatementAdapter bsa = new BlockStatementAdapter(context, cClause.body());
+                node.getBlock().apply(bsa);
+            }
+        } finally {
+            context.popScope();
         }
     }
 }
