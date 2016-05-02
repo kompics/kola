@@ -364,6 +364,8 @@ public class BasicTests extends BasicParent {
         Assert.assertEquals(42, (BasicTests.this).field);
         Class v = void.class;
         Assert.assertEquals("java.lang.Void", v.getName());
+        Class c = Object.class;
+        Assert.assertEquals("java.lang.Object", c.getName());
         Assert.assertEquals(3, array[2]);
         Object o = this;
         BasicTests t = (BasicTests) o;

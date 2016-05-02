@@ -29,7 +29,9 @@ import com.sun.codemodel.JLabel;
 import com.sun.codemodel.JPackage;
 import java.util.HashMap;
 import org.reflections.Reflections;
+import org.reflections.ReflectionsException;
 import org.reflections.scanners.SubTypesScanner;
+import se.sics.kola.Logger;
 import se.sics.kola.node.TIdentifier;
 
 /**
@@ -37,27 +39,31 @@ import se.sics.kola.node.TIdentifier;
  * @author lkroll
  */
 class PackageScope extends NamedScope implements Scope.Typey {
-
+    
     private final HashMap<String, Type> types = new HashMap<>();
     private final HashMap<String, Optional<JClass>> externalTypes = new HashMap<>();
     private final JPackage pack;
-
+    
     PackageScope(JPackage pack, GlobalScope parent) {
         super(pack.name(), parent);
         this.pack = pack;
-
+        
         Reflections reflections = new Reflections(name(), new SubTypesScanner(false));
-        for (String s : reflections.getAllTypes()) {
-            Optional<JClass> ojc = Optional.absent();
-            externalTypes.put(s, ojc);
+        try {
+            for (String s : reflections.getAllTypes()) {
+                Optional<JClass> ojc = Optional.absent();
+                externalTypes.put(s, ojc);
+            }
+        } catch (ReflectionsException ex) { // it's ok for this to happen...a new package will indeed be empty
+            Logger.warn("No types in package " + name());
         }
     }
-
+    
     @Override
     public GlobalScope parent() {
         return (GlobalScope) super.parent();
     }
-
+    
     @Override
     public JClass resolveType(String shortName) {
         // internal
@@ -80,12 +86,12 @@ class PackageScope extends NamedScope implements Scope.Typey {
         }
         return parent().resolveType(shortName);
     }
-
+    
     @Override
     public String getFile() {
         return null;
     }
-
+    
     @Override
     public Type declare(int mods, TIdentifier identifier, ClassType ctype, Optional<String> name) throws JClassAlreadyExistsException {
         String className;
@@ -99,7 +105,7 @@ class PackageScope extends NamedScope implements Scope.Typey {
         types.put(className, childT);
         return childT;
     }
-
+    
     public Type declare(int mods, TIdentifier identifier, ClassType ctype, Optional<String> name, FileScope directParent) throws JClassAlreadyExistsException {
         String className;
         if (name.isPresent()) {
@@ -112,16 +118,15 @@ class PackageScope extends NamedScope implements Scope.Typey {
         types.put(className, childT);
         return childT;
     }
-
     
     @Override
     public JLabel resolveLabel(String name) {
         return null;
     }
-
+    
     @Override
     public Field resolveField(String name) {
         return null;
     }
-
+    
 }

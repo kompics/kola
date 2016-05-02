@@ -89,6 +89,7 @@ import se.sics.kola.node.AThisExpressionNoName;
 import se.sics.kola.node.ATildeExpressionNoName;
 import se.sics.kola.node.ATypeArgumentsTypeArgumentsOrDiamond;
 import se.sics.kola.node.ATypeDeclSpecifier;
+import se.sics.kola.node.ATypeExpressionNoName;
 import se.sics.kola.node.AUminusExpressionNoName;
 import se.sics.kola.node.AUshrExpressionNoName;
 import se.sics.kola.node.AVoidExpressionNoName;
@@ -113,7 +114,7 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         this.parent = parent;
         this.context = context;
     }
-
+    
     ////////////////////////// Assignment ///////////////////////////
     @Override
     public void caseAAssignmentExpressionNoName(AAssignmentExpressionNoName node) {
@@ -696,6 +697,14 @@ public class ExpressionAdapter extends DepthFirstAdapter {
         expr = JExpr.dotthis(jc);
     }
 
+    @Override
+    public void caseATypeExpressionNoName(ATypeExpressionNoName node) {
+        TypeAdapter ta = new TypeAdapter(context);
+        node.apply(ta);
+        JType t = ta.type;
+        expr = JExpr.dotclass(t.boxify());
+    }
+    
     @Override
     public void caseAVoidExpressionNoName(AVoidExpressionNoName node) {
         JClass jc = context.unit.VOID.boxify();

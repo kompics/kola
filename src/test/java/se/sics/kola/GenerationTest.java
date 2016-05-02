@@ -70,7 +70,7 @@ public class GenerationTest {
         try {
             //System.out.println(new java.io.File( "." ).getCanonicalPath());
 
-            Main.main(new String[]{"-p", "-s", targetPath, "src/test/resources/se/sics/kola/BasicTests.kola"});
+            Main.main(new String[]{"-p", "-m", "-s", targetPath, "src/test/resources/se/sics/kola/BasicTests.kola"});
             compile(targetPath);
             ClassLoader cl = new URLClassLoader(new URL[]{(new File(targetPath)).toURI().toURL()});
             Class testClass = cl.loadClass("se.sics.kola.BasicTests");
@@ -105,7 +105,7 @@ public class GenerationTest {
         try {
             //System.out.println(new java.io.File( "." ).getCanonicalPath());
             TestUtil.reset("Kola Test");
-            Main.main(new String[]{"-p", "-s", targetPath, "src/test/resources/se/sics/kola/KolaTests.kola", "src/test/resources/se/sics/kola/TestPort.kola"});
+            Main.main(new String[]{"-p", "-m", "-s", targetPath, "src/test/resources/se/sics/kola/KolaTests.kola", "src/test/resources/se/sics/kola/TestPort.kola"});
             compile(targetPath);
             ClassLoader cl = new URLClassLoader(new URL[]{(new File(targetPath)).toURI().toURL()});
             Class testClass = cl.loadClass("se.sics.kola.KolaTestC");

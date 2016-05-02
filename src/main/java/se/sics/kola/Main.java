@@ -48,6 +48,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import se.sics.kola.lexer.Lexer;
 import se.sics.kola.lexer.LexerException;
+import se.sics.kola.metrics.LexicalMeter;
+import se.sics.kola.metrics.Metrics;
 import se.sics.kola.node.Start;
 import se.sics.kola.parser.Parser;
 import se.sics.kola.parser.ParserException;
@@ -70,7 +72,7 @@ public class Main {
             CommandLineParser cliparser = new DefaultParser();
             CommandLine cmd = cliparser.parse(opts, args);
             String[] files = cmd.getArgs();
-            long start_time, stop_time; // times compilation
+            long startTime, stopTime; // times compilation
 
             if (files.length < 1) {
                 formatter.printHelp("Usage: kolac <options> <source files>", opts);
@@ -85,7 +87,37 @@ public class Main {
             }
             List<File> sourceFiles = findSources(files);
             ExecutorService execs = Executors.newCachedThreadPool();
-            start_time = System.currentTimeMillis();
+            // ********** Metrics ***********
+            if (cmd.hasOption("m") || cmd.hasOption("M")) {
+                Map<File, Future<Metrics>> futures = new HashMap<>();
+                startTime = System.currentTimeMillis();
+                for (final File f : sourceFiles) {
+                    Future<Metrics> fm = execs.submit(new Callable<Metrics>() {
+
+                        @Override
+                        public Metrics call() throws Exception {
+                            return measure(f);
+                        }
+                    });
+                    futures.put(f, fm);
+                }
+                Metrics[] fileMetrics = new Metrics[futures.size()];
+                int fmIndex = 0;
+                for (Entry<File, Future<Metrics>> e : futures.entrySet()) {
+                    Metrics m = e.getValue().get();
+                    fileMetrics[fmIndex] = m;
+                    fmIndex++;
+                    System.out.println("Metrics for " + e.getKey() + ":\n" + m);
+                }
+                Metrics totalMetrics = Metrics.merge(fileMetrics);
+                stopTime = System.currentTimeMillis();
+                System.out.println("Collected metrics for all files in " + (stopTime - startTime) + "ms:\n" + totalMetrics);
+            }
+            if (cmd.hasOption("M")) {
+                return; // Do not parse!
+            }
+            // ********** Parsing ***********
+            startTime = System.currentTimeMillis();
             Map<File, Future<Start>> futures = new HashMap<>();
             for (final File f : sourceFiles) {
                 Future<Start> fres = execs.submit(new Callable<Start>() {
@@ -102,14 +134,14 @@ public class Main {
                 Start s = e.getValue().get();
                 starts.put(e.getKey(), s);
             }
-            stop_time = System.currentTimeMillis();
-            System.out.println("Parsed all files in " + (stop_time - start_time) + "ms.");
+            stopTime = System.currentTimeMillis();
+            System.out.println("Parsed all files in " + (stopTime - startTime) + "ms.");
 
             if (parsingError.get()) {
                 System.err.println("Errors occurred during parsing stage. Exiting...");
                 System.exit(1);
             }
-
+            // ********** Analysis ***********
             ResolutionContext context = new ResolutionContext();
             for (Entry<File, Start> e : starts.entrySet()) {
                 System.out.println("Analysing AST for " + e.getKey());
@@ -131,12 +163,14 @@ public class Main {
 //                System.exit(1);
 //            }
             context.printDeclaredTypes();
+            // ********** Debug Printing ***********
             if (cmd.hasOption("debugPrint")) {
                 System.out.println("DONE with compilation unit. Generated Code: ");
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 context.unit.build(new SingleStreamCodeWriter(out));
                 out.writeTo(System.out);
             }
+            // ********** Write Out ***********
             sw.writeOut(context.unit);
         } catch (ParseException ex) {
             System.err.println("Invalid commandline options: " + ex.getMessage());
@@ -148,6 +182,36 @@ public class Main {
         } catch (IOException ex) {
             System.err.println("File writer error: " + ex.getMessage());
             System.exit(1);
+        }
+    }
+
+    private static Metrics measure(File f) {
+        try (FileReader fr = new FileReader(f);
+                BufferedReader br = new BufferedReader(fr);
+                PushbackReader pbr = new PushbackReader(br, 1024);) {
+
+            // create lexer
+            Lexer lexer = new Lexer(pbr);
+            LexicalMeter meter = new LexicalMeter(lexer);
+            meter.measure();
+
+            return meter.metrics();
+        } catch (LexerException ex) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("There was an error tokenizing ");
+            sb.append(f.getName());
+            sb.append(".\n  Found: \'");
+            sb.append(ex.getToken().getText());
+            sb.append("\'\n");
+            sb.append(ex.getMessage());
+            Logger.error(f.getName(), ex.getToken(), sb.toString());
+            parsingError.set(true);
+            return null;
+        } catch (IOException ex) {
+            //System.err.println(e.getMessage());
+            parsingError.set(true);
+            ex.printStackTrace(System.err);
+            return null;
         }
     }
 
@@ -198,8 +262,12 @@ public class Main {
         Options opts = new Options();
 
         opts.addOption("s", true, "Specify where to place generated source files");
-        
+
         opts.addOption("p", "debugPrint", false, "Print generated code to Console as well.");
+
+        opts.addOption("m", "metrics", false, "Generate Code Metrics.");
+        
+        opts.addOption("M", "metricsOnly", false, "Do not parse! Only generate metrics.");
 
         return opts;
     }
